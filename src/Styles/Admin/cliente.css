@@ -1,0 +1,150 @@
+/* Cliente page */
+
+/* ── Table ── */
+
+.cli-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cli-table thead tr {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.cli-table th {
+  padding: 11px 20px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+
+.cli-table th.cli-col-doc    { width: 160px; }
+.cli-table th.cli-col-tel    { width: 150px; }
+.cli-table th.cli-col-cidade { width: 160px; }
+.cli-table th.col-actions    { width: 96px; }
+
+.cli-table tbody tr {
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 0.1s;
+}
+
+.cli-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.cli-table tbody tr:hover {
+  background: var(--surface);
+}
+
+.cli-table tbody tr:hover .cat-row-actions {
+  opacity: 1;
+}
+
+.cli-table td {
+  padding: 13px 20px;
+  vertical-align: middle;
+}
+
+/* Name cell */
+
+.cli-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.cli-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--sage-soft);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sage-deep);
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.cli-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  display: block;
+}
+
+.cli-email {
+  font-size: 12px;
+  color: var(--fg-3);
+  margin-top: 1px;
+}
+
+/* Data cells */
+
+.cli-doc,
+.cli-tel {
+  font-size: 13.5px;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cli-cidade {
+  font-size: 13.5px;
+  color: var(--fg-2);
+}
+
+.cli-uf {
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+.cli-empty-field {
+  color: var(--fg-3);
+}
+
+/* ── Modal large ── */
+
+.modal--lg {
+  max-width: 560px;
+}
+
+/* ── Form layout ── */
+
+.form-row {
+  display: flex;
+  gap: 14px;
+}
+
+.form-field--grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-field--cep {
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.form-field--uf {
+  width: 58px;
+  flex-shrink: 0;
+}
+
+.form-input--center {
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.form-required {
+  color: oklch(0.50 0.15 20);
+  font-size: 11px;
+}

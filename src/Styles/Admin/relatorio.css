@@ -1,0 +1,357 @@
+/* ── Relatório page ── */
+
+.rel-page {
+  padding: 32px 36px;
+  max-width: 760px;
+}
+
+.rel-page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--fg);
+  margin: 0 0 6px;
+}
+
+.rel-page-sub {
+  font-size: 13px;
+  color: var(--fg-3);
+  margin: 0 0 32px;
+}
+
+/* ── Cards ── */
+
+.rel-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rel-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 20px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.rel-card:hover {
+  border-color: var(--sage);
+  box-shadow: 0 2px 12px oklch(0 0 0 / 0.06);
+}
+
+.rel-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: oklch(0.95 0.03 145 / 0.35);
+  color: var(--sage);
+  flex-shrink: 0;
+}
+
+.rel-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rel-card-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.rel-card-desc {
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+.rel-card-arrow {
+  color: var(--fg-3);
+  flex-shrink: 0;
+}
+
+/* ── Modal shared ── */
+
+.rel-overlay {
+  z-index: 200;
+}
+
+.modal-box {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px oklch(0 0 0 / 0.18);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: modal-rise 0.18s ease;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 0;
+  flex-shrink: 0;
+}
+
+.modal-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--fg-3);
+  border-radius: 6px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.modal-close:hover {
+  background: oklch(0.94 0 0);
+  color: var(--fg);
+}
+
+.rel-modal {
+  width: min(560px, 94vw);
+}
+
+.rel-modal--lg {
+  width: min(680px, 96vw);
+}
+
+.rel-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.rel-modal-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.rel-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* ── Filters ── */
+
+.rel-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rel-filter-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.rel-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 64px;
+  padding-top: 2px;
+}
+
+.rel-radio-group,
+.rel-check-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+
+.rel-radio,
+.rel-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.rel-date-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rel-date-input {
+  font-size: 13px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+}
+
+.rel-date-input:focus {
+  border-color: var(--sage);
+}
+
+.rel-date-sep {
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+/* ── Preview table ── */
+
+.rel-preview {
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.rel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.rel-table th {
+  background: oklch(0.97 0 0);
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--line-soft);
+  position: sticky;
+  top: 0;
+}
+
+.rel-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--fg);
+}
+
+.rel-table tr:last-child td {
+  border-bottom: none;
+}
+
+.rel-table tbody tr:hover td {
+  background: oklch(0.97 0 0 / 0.6);
+}
+
+.rel-table-total td {
+  font-weight: 700;
+  font-size: 12px;
+  background: oklch(0.97 0 0);
+  border-top: 1px solid var(--line-soft);
+}
+
+.rel-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--fg-3);
+  font-size: 13px;
+  margin: 0;
+}
+
+.rel-count {
+  font-size: 11px;
+  color: var(--fg-3);
+  margin: 0;
+  text-align: right;
+}
+
+/* ── Badges ── */
+
+.rel-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.rel-badge--ativo {
+  background: oklch(0.94 0.03 145);
+  color: oklch(0.38 0.1 145);
+}
+
+.rel-badge--inativo {
+  background: oklch(0.96 0.01 0);
+  color: oklch(0.45 0.05 20);
+}
+
+.rel-badge--aberto {
+  background: oklch(0.93 0.03 240);
+  color: oklch(0.38 0.1 240);
+}
+
+.rel-badge--pendente {
+  background: oklch(0.95 0.05 75);
+  color: oklch(0.42 0.12 75);
+}
+
+.rel-badge--pago {
+  background: oklch(0.94 0.03 145);
+  color: oklch(0.38 0.1 145);
+}
+
+.rel-badge--cancelado {
+  background: oklch(0.96 0.02 20);
+  color: oklch(0.45 0.1 20);
+}
+
+/* ── Download button ── */
+
+.rel-btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  background: var(--sage);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.rel-btn-download:hover {
+  opacity: 0.88;
+}
+
+.rel-btn-download:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

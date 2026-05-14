@@ -1,0 +1,49 @@
+/* MaisArroba — Sistema de Design */
+
+:root {
+  --bg: oklch(0.985 0.004 130);
+  --surface: oklch(0.965 0.005 130);
+  --surface-2: oklch(0.94 0.006 130);
+  --line: oklch(0.88 0.006 130);
+  --line-soft: oklch(0.92 0.005 130);
+  --fg: oklch(0.20 0.01 140);
+  --fg-2: oklch(0.42 0.01 140);
+  --fg-3: oklch(0.58 0.008 140);
+
+  --sage: oklch(0.52 0.04 145);
+  --sage-deep: oklch(0.34 0.04 145);
+  --sage-soft: oklch(0.92 0.015 145);
+  --gold: oklch(0.72 0.10 80);
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+
+  --shadow-sm: 0 1px 2px oklch(0.20 0.01 140 / 0.04);
+  --shadow-md: 0 4px 16px oklch(0.20 0.01 140 / 0.06), 0 1px 2px oklch(0.20 0.01 140 / 0.04);
+  --shadow-lg: 0 12px 40px oklch(0.20 0.01 140 / 0.10);
+
+  --font-display: 'Manrope', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  --max-w: 1320px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

@@ -1,0 +1,330 @@
+/* ── Estoque page ── */
+
+/* ── Table ── */
+
+.est-table-wrap {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.est-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.est-table thead tr {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.est-table th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+
+.est-table th.col-qty     { width: 130px; text-align: center; }
+.est-table th.col-data    { width: 120px; }
+.est-table th.col-actions { width: 96px; }
+
+.est-table tbody tr {
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 0.1s;
+}
+
+.est-table tbody tr:last-child { border-bottom: none; }
+.est-table tbody tr:hover      { background: var(--surface); }
+.est-table tbody tr:hover .est-row-actions { opacity: 1; }
+
+.est-table td {
+  padding: 13px 16px;
+  vertical-align: middle;
+}
+
+.est-table td.col-qty { text-align: center; }
+
+/* Produto cell */
+
+.est-produto-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.est-produto-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sage);
+  flex-shrink: 0;
+}
+
+.est-produto-nome {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+/* Qty badge */
+
+.est-qty-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 99px;
+  background: oklch(0.94 0.03 145);
+  color: oklch(0.35 0.10 145);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Date cell */
+
+.est-data {
+  font-size: 13px;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Row actions */
+
+.est-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.est-action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  color: var(--fg-3);
+  transition: background 0.12s, color 0.12s;
+}
+
+.est-action-btn--danger:hover {
+  background: oklch(0.96 0.02 20);
+  color: oklch(0.45 0.15 20);
+}
+
+/* Empty state */
+
+.est-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 72px 24px;
+  text-align: center;
+  gap: 8px;
+}
+
+.est-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-3);
+  margin-bottom: 6px;
+}
+
+.est-empty-title { font-size: 14.5px; font-weight: 600; color: var(--fg-2); }
+.est-empty-desc  { font-size: 13px; color: var(--fg-3); max-width: 280px; line-height: 1.5; }
+
+/* Skeleton */
+
+.est-skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: est-shimmer 1.4s infinite;
+}
+
+@keyframes est-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Product Picker ── */
+
+.est-picker-overlay {
+  z-index: 300;
+}
+
+.est-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--fg-3);
+}
+
+.est-picker-search input {
+  border: none;
+  outline: none;
+  font-size: 13.5px;
+  font-family: var(--font-body);
+  color: var(--fg);
+  flex: 1;
+  background: none;
+}
+
+.est-picker-search input::placeholder { color: var(--fg-3); }
+
+.est-picker-list {
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.est-picker-empty {
+  text-align: center;
+  padding: 32px 24px;
+  font-size: 13px;
+  color: var(--fg-3);
+}
+
+.est-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 24px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 16px;
+  transition: background 0.1s;
+}
+
+.est-picker-item:hover { background: var(--surface); }
+
+.est-picker-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.est-picker-item-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.est-picker-item-emb {
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+.est-picker-item-stock {
+  font-size: 12px;
+  color: var(--fg-3);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Produto trigger (modal) ── */
+
+.est-produto-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.est-produto-trigger:hover,
+.est-produto-trigger:focus-within {
+  border-color: var(--sage);
+}
+
+.est-produto-trigger-icon {
+  color: var(--fg-3);
+  flex-shrink: 0;
+}
+
+.est-produto-trigger input {
+  border: none;
+  outline: none;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--fg-3);
+  cursor: pointer;
+  background: transparent;
+  flex: 1;
+  pointer-events: none;
+}
+
+.est-produto-trigger input.est-produto-selected {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.est-produto-trigger input::placeholder { color: var(--fg-3); }
+
+.est-produto-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--fg-3);
+  border-radius: 4px;
+  transition: color 0.12s, background 0.12s;
+  flex-shrink: 0;
+  pointer-events: all;
+}
+
+.est-produto-clear:hover {
+  background: oklch(0.94 0 0);
+  color: var(--fg);
+}
+
+.est-produto-hint {
+  font-size: 12px;
+  color: var(--fg-3);
+  margin-top: 4px;
+}
+
+/* ── Modal form layout ── */
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}

@@ -1,0 +1,739 @@
+/* ── Pedido / Venda page ── */
+
+/* ── Table ── */
+
+.ped-table-wrap {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.ped-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ped-table thead tr {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.ped-table th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+
+.ped-table th.col-id      { width: 60px; }
+.ped-table th.col-valor   { text-align: right; width: 110px; }
+.ped-table th.col-data    { width: 108px; }
+.ped-table th.col-actions { width: 128px; }
+
+.ped-table tbody tr {
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 0.1s;
+}
+
+.ped-table tbody tr:last-child { border-bottom: none; }
+.ped-table tbody tr:hover      { background: var(--surface); }
+.ped-table tbody tr:hover .ped-row-actions { opacity: 1; }
+
+.ped-table td {
+  padding: 13px 16px;
+  vertical-align: middle;
+}
+
+.ped-table td.col-valor { text-align: right; }
+
+/* ID cell */
+
+.ped-id {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Products column */
+
+.ped-itens-col {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.ped-item-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  font-size: 11.5px;
+  color: var(--fg-2);
+  white-space: nowrap;
+}
+
+.ped-item-more {
+  font-size: 11.5px;
+  color: var(--fg-3);
+  padding: 0 4px;
+}
+
+.ped-item-none {
+  font-size: 12px;
+  color: var(--fg-3);
+  font-style: italic;
+}
+
+/* Value cell */
+
+.ped-valor {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Date cell */
+
+.ped-data {
+  font-size: 13px;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Status badge */
+
+.ped-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ped-badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.ped-badge--aberto    { background: oklch(0.93 0.03 240); color: oklch(0.38 0.14 240); }
+.ped-badge--pendente  { background: oklch(0.95 0.05 75);  color: oklch(0.44 0.14 75); }
+.ped-badge--pago      { background: oklch(0.94 0.03 145); color: oklch(0.38 0.10 145); }
+.ped-badge--cancelado { background: oklch(0.96 0.02 20);  color: oklch(0.45 0.15 20); }
+
+/* Row actions */
+
+.ped-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ped-action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  color: var(--fg-3);
+  transition: background 0.12s, color 0.12s;
+}
+
+.ped-action-btn--finalizar:hover { background: oklch(0.94 0.03 145); color: oklch(0.38 0.10 145); }
+.ped-action-btn--reabrir:hover   { background: var(--surface-2); color: var(--fg); }
+.ped-action-btn--cancelar:hover  { background: oklch(0.96 0.02 20); color: oklch(0.45 0.15 20); }
+
+/* Empty state */
+
+.ped-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 72px 24px;
+  text-align: center;
+  gap: 8px;
+}
+
+.ped-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-3);
+  margin-bottom: 6px;
+}
+
+.ped-empty-title { font-size: 14.5px; font-weight: 600; color: var(--fg-2); }
+.ped-empty-desc  { font-size: 13px; color: var(--fg-3); max-width: 260px; line-height: 1.5; }
+
+/* Skeleton */
+
+.ped-skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: ped-shimmer 1.4s infinite;
+}
+
+@keyframes ped-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Product Picker ── */
+
+.ped-picker-overlay {
+  z-index: 300;
+}
+
+.ped-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 28px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--fg-3);
+}
+
+.ped-picker-search input {
+  border: none;
+  outline: none;
+  font-size: 13.5px;
+  font-family: var(--font-body);
+  color: var(--fg);
+  flex: 1;
+  background: none;
+}
+
+.ped-picker-search input::placeholder { color: var(--fg-3); }
+
+.ped-picker-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.ped-picker-empty {
+  text-align: center;
+  padding: 32px 24px;
+  font-size: 13px;
+  color: var(--fg-3);
+}
+
+.ped-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 16px;
+  transition: background 0.1s;
+}
+
+.ped-picker-item:hover:not(:disabled) { background: var(--surface); }
+.ped-picker-item:disabled             { opacity: 0.45; cursor: not-allowed; }
+
+.ped-picker-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ped-picker-item-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ped-picker-item-emb {
+  font-size: 12px;
+  color: var(--fg-3);
+}
+
+.ped-picker-item-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ped-picker-item-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.ped-picker-item-stock           { font-size: 11px; color: var(--fg-3); }
+.ped-picker-item-stock--zero     { color: oklch(0.50 0.15 25); font-weight: 600; }
+
+/* ── Search trigger ── */
+
+.ped-search-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--r-md);
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.ped-search-trigger:hover {
+  border-color: var(--sage);
+  background: var(--sage-soft);
+}
+
+.ped-search-trigger-icon { color: var(--fg-3); flex-shrink: 0; transition: color 0.15s; }
+.ped-search-trigger:hover .ped-search-trigger-icon { color: var(--sage-deep); }
+
+.ped-search-trigger input {
+  border: none;
+  outline: none;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--fg);
+  cursor: pointer;
+  background: transparent;
+  flex: 1;
+  pointer-events: none;
+}
+
+.ped-search-trigger input::placeholder { color: var(--fg-3); }
+
+/* ── Items list ── */
+
+.ped-items-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.ped-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  background: white;
+}
+
+.ped-item-row:last-of-type { border-bottom: none; }
+
+.ped-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ped-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ped-item-emb {
+  font-size: 11.5px;
+  color: var(--fg-3);
+}
+
+.ped-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ped-item-qty {
+  width: 56px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fg);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.ped-item-qty:focus { border-color: var(--sage); }
+
+.ped-item-total {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ped-item-remove {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--fg-3);
+  border-radius: var(--r-sm);
+  transition: background 0.12s, color 0.12s;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.ped-item-remove:hover { background: oklch(0.96 0.02 20); color: oklch(0.45 0.15 20); }
+
+/* ── PDV Modal ── */
+
+.pdv-modal {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 8px 48px oklch(0 0 0 / 0.20);
+  width: min(1020px, 96vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  animation: modal-rise 0.18s ease;
+}
+
+@keyframes modal-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.pdv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px 0;
+  flex-shrink: 0;
+}
+
+.pdv-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* ── PDV body: dois painéis ── */
+
+.pdv-body {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+  padding: 20px 0 0;
+}
+
+/* Painel esquerdo */
+
+.pdv-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px 24px 28px;
+  overflow: hidden;
+  border-right: 1px solid var(--line-soft);
+}
+
+.pdv-search-wrap {
+  flex-shrink: 0;
+}
+
+.pdv-items-wrap {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.pdv-items-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 180px;
+  gap: 10px;
+  color: var(--fg-3);
+  font-size: 13px;
+}
+
+/* Cabeçalho da lista de itens */
+
+.pdv-items-head {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  gap: 10px;
+}
+
+.pdv-items-head span:first-child { flex: 1; }
+.pdv-col-qty   { width: 56px; text-align: center; }
+.pdv-col-price { width: 120px; }
+.pdv-col-total { width: 80px; text-align: right; }
+.pdv-col-rm    { width: 24px; }
+
+/* Campo de preço editável */
+
+.pdv-price-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 120px;
+  position: relative;
+}
+
+.pdv-price-prefix {
+  font-size: 12px;
+  color: var(--fg-3);
+  flex-shrink: 0;
+}
+
+.pdv-item-price {
+  width: 80px;
+  height: 32px;
+  padding: 0 6px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fg);
+  outline: none;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s;
+}
+
+.pdv-item-price:focus { border-color: var(--sage); }
+
+.pdv-price-original {
+  position: absolute;
+  top: -14px;
+  left: 20px;
+  font-size: 10px;
+  color: var(--fg-3);
+  text-decoration: line-through;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Painel direito */
+
+.pdv-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 28px 24px 16px;
+  overflow-y: auto;
+}
+
+/* Resumo */
+
+.pdv-summary {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pdv-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--fg-2);
+}
+
+.pdv-summary-label { color: var(--fg-3); }
+
+.pdv-summary-divider {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 0;
+}
+
+.pdv-summary-total {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Campos adicionais */
+
+.pdv-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Ações */
+
+.pdv-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.pdv-btn-submit {
+  width: 100%;
+  justify-content: center;
+  padding: 10px;
+  font-size: 14px;
+}
+
+/* ── Cliente section (pdv-right) ── */
+
+.pdv-client-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pdv-client-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.pdv-client-trigger {
+  width: 100%;
+}
+
+.pdv-client-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.pdv-client-icon {
+  color: var(--fg-3);
+  flex-shrink: 0;
+}
+
+.pdv-client-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pdv-client-clear {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--fg-3);
+  border-radius: var(--r-sm);
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.pdv-client-clear:hover { background: oklch(0.96 0.02 20); color: oklch(0.45 0.15 20); }
+
+/* ── Coluna cliente na tabela ── */
+
+.ped-table th.col-cliente { width: 140px; }
+
+.ped-cliente {
+  font-size: 13px;
+  color: var(--fg-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+  display: block;
+}
+
+.ped-cliente-none {
+  font-size: 13px;
+  color: var(--fg-3);
+}

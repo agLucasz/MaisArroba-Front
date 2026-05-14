@@ -1,0 +1,519 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  User, CreditCard, CheckCircle, ChevronLeft, ChevronRight,
+  Copy, ExternalLink, Loader, QrCode, FileText, AlertCircle,
+} from 'lucide-react';
+import Header from '../Components/Header';
+import Footer from '../Components/Footer';
+import { useCart } from '../Contexts/CartContext';
+import { useComprador } from '../Contexts/CompradorContext';
+import { asaasService, type BillingType, type CheckoutResponse } from '../Services/asaasService';
+import '../Styles/checkout.css';
+
+type Step = 'cliente' | 'pagamento' | 'resultado';
+
+interface ClienteForm {
+  nome: string; cpfCnpj: string; email: string; telefone: string;
+  endereco: string; numero: string; bairro: string; cep: string;
+  cidade: string; uf: string;
+}
+
+interface CardForm {
+  holderName: string; number: string; expiryMonth: string;
+  expiryYear: string; ccv: string; installmentCount: number;
+}
+
+const EMPTY_CLIENTE: ClienteForm = {
+  nome: '', cpfCnpj: '', email: '', telefone: '',
+  endereco: '', numero: '', bairro: '', cep: '', cidade: '', uf: '',
+};
+
+const EMPTY_CARD: CardForm = {
+  holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: '', installmentCount: 1,
+};
+
+const METHODS: { type: BillingType; label: string; desc: string; icon: React.ReactNode; badge?: string }[] = [
+  { type: 'PIX',         label: 'PIX',    desc: 'Aprovação imediata via QR Code', icon: <QrCode size={22} />,    badge: 'Instantâneo' },
+  { type: 'BOLETO',      label: 'Boleto', desc: 'Vence em 3 dias úteis',           icon: <FileText size={22} />  },
+  { type: 'CREDIT_CARD', label: 'Cartão', desc: 'Crédito em até 12×',              icon: <CreditCard size={22} /> },
+];
+
+const STEP_LABELS: { key: Step; label: string }[] = [
+  { key: 'cliente',   label: 'Seus dados'  },
+  { key: 'pagamento', label: 'Pagamento'   },
+  { key: 'resultado', label: 'Confirmação' },
+];
+
+const Checkout: React.FC = () => {
+  const navigate = useNavigate();
+  const { items, clearCart } = useCart();
+  const { comprador, isLoggedIn } = useComprador();
+
+  const [step,     setStep]     = useState<Step>('cliente');
+  const [billing,  setBilling]  = useState<BillingType>('PIX');
+  const [cliente,  setCliente]  = useState<ClienteForm>(EMPTY_CLIENTE);
+  const [card,     setCard]     = useState<CardForm>(EMPTY_CARD);
+  const [errors,   setErrors]   = useState<Partial<ClienteForm & CardForm>>({});
+  const [loading,  setLoading]  = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [result,   setResult]   = useState<CheckoutResponse | null>(null);
+  const [copied,   setCopied]   = useState(false);
+
+  useEffect(() => {
+    document.title = 'Finalizar pedido — MaisArroba';
+  }, []);
+
+  useEffect(() => {
+    if (items.length === 0 && step !== 'resultado') navigate('/carrinho', { replace: true });
+  }, [items, step, navigate]);
+
+  // Pré-preenche dados do comprador logado
+  useEffect(() => {
+    if (!comprador) return;
+    setCliente({
+      nome:      comprador.nome,
+      cpfCnpj:   comprador.documento,
+      email:     comprador.email,
+      telefone:  comprador.telefone,
+      cep:       comprador.cep,
+      endereco:  comprador.endereco,
+      numero:    comprador.numero,
+      bairro:    comprador.bairro,
+      cidade:    comprador.cidade,
+      uf:        comprador.uf,
+    });
+  }, [comprador]);
+
+  const totalValor = items.reduce((s, i) => s + i.produto.valorVenda * i.qty, 0);
+  const formatBRL  = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const stepIndex  = STEP_LABELS.findIndex(s => s.key === step);
+
+  // ── Validação ────────────────────────────────────────────────
+
+  const validateCliente = (): boolean => {
+    const e: Partial<ClienteForm> = {};
+    if (!cliente.nome.trim())    e.nome    = 'Nome obrigatório';
+    if (!cliente.cpfCnpj.trim()) e.cpfCnpj = 'CPF/CNPJ obrigatório';
+    if (cliente.email && !/\S+@\S+\.\S+/.test(cliente.email))
+      e.email = 'E-mail inválido';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const validateCard = (): boolean => {
+    if (billing !== 'CREDIT_CARD') return true;
+    const e: Partial<CardForm> = {};
+    if (!card.holderName.trim())              e.holderName  = 'Nome no cartão obrigatório';
+    if (card.number.replace(/\s/g, '').length < 15) e.number = 'Número inválido';
+    if (!card.expiryMonth)                    e.expiryMonth = 'Mês inválido';
+    if (!card.expiryYear)                     e.expiryYear  = 'Ano inválido';
+    if (card.ccv.length < 3)                  e.ccv         = 'CVV inválido';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  // ── Submit ───────────────────────────────────────────────────
+
+  const handleSubmit = async () => {
+    if (!validateCard()) return;
+    setLoading(true);
+    setApiError(null);
+    try {
+      const response = await asaasService.checkout({
+        itens: items.map(i => ({ produtoId: i.produto.produtoId, quantidade: i.qty })),
+        cliente: {
+          nome:     cliente.nome,
+          cpfCnpj: cliente.cpfCnpj,
+          email:    cliente.email   || undefined,
+          telefone: cliente.telefone || undefined,
+          endereco: cliente.endereco || undefined,
+          numero:   cliente.numero  || undefined,
+          bairro:   cliente.bairro  || undefined,
+          cep:      cliente.cep     || undefined,
+          cidade:   cliente.cidade  || undefined,
+          uf:       cliente.uf      || undefined,
+        },
+        billingType: billing,
+        cartao: billing === 'CREDIT_CARD' ? {
+          holderName:       card.holderName,
+          number:           card.number.replace(/\s/g, ''),
+          expiryMonth:      card.expiryMonth,
+          expiryYear:       card.expiryYear,
+          ccv:              card.ccv,
+          installmentCount: card.installmentCount,
+        } : undefined,
+      });
+      setResult(response);
+      setStep('resultado');
+      clearCart();
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Erro ao processar pagamento.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // ── Campo helpers ────────────────────────────────────────────
+
+  const clienteField = (
+    key: keyof ClienteForm, label: string, placeholder?: string,
+    type = 'text', required = false,
+  ) => (
+    <div className="ck-field">
+      <label className="ck-label">
+        {label}{required && <span>*</span>}
+      </label>
+      <input
+        className={`ck-input${errors[key] ? ' ck-input--error' : ''}`}
+        type={type}
+        placeholder={placeholder}
+        value={cliente[key]}
+        onChange={e => setCliente(p => ({ ...p, [key]: e.target.value }))}
+      />
+      {errors[key] && <span className="ck-error">{errors[key]}</span>}
+    </div>
+  );
+
+  const cardField = (
+    key: keyof CardForm, label: string, placeholder?: string,
+    type = 'text', maxLen?: number,
+  ) => (
+    <div className="ck-field">
+      <label className="ck-label">{label}<span>*</span></label>
+      <input
+        className={`ck-input${errors[key] ? ' ck-input--error' : ''}`}
+        type={type}
+        placeholder={placeholder}
+        value={card[key] as string}
+        maxLength={maxLen}
+        onChange={e => setCard(p => ({ ...p, [key]: e.target.value }))}
+      />
+      {errors[key] && <span className="ck-error">{String(errors[key])}</span>}
+    </div>
+  );
+
+  // ── Render ───────────────────────────────────────────────────
+
+  return (
+    <div className="ck-page">
+      <Header />
+
+      {/* Barra de progresso */}
+      <div className="ck-progress-bar">
+        <div className="ck-progress-inner">
+          {STEP_LABELS.map((s, i) => (
+            <React.Fragment key={s.key}>
+              <div className={`ck-step${stepIndex === i ? ' ck-step--active' : ''}${stepIndex > i ? ' ck-step--done' : ''}`}>
+                <div className="ck-step-num">
+                  {stepIndex > i ? <CheckCircle size={13} /> : i + 1}
+                </div>
+                <span>{s.label}</span>
+              </div>
+              {i < STEP_LABELS.length - 1 && (
+                <div className={`ck-step-connector${stepIndex > i ? ' ck-step-connector--done' : ''}`} />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ RESULTADO — layout centralizado ══ */}
+      {step === 'resultado' && result && (
+        <div className="ck-result">
+
+          {/* Hero */}
+          <div className="ck-result-hero">
+            <div className="ck-result-check">
+              <CheckCircle size={36} strokeWidth={1.8} />
+            </div>
+            <h1 className="ck-result-title">
+              {result.billingType === 'CREDIT_CARD' ? 'Pagamento aprovado!' : 'Pedido realizado!'}
+            </h1>
+            <span className="ck-result-order">Pedido #{result.vendaId}</span>
+            <p className="ck-result-desc">
+              {result.billingType === 'CREDIT_CARD'
+                ? 'Seu pagamento foi processado com sucesso. Nossa equipe entrará em contato para confirmar a entrega.'
+                : 'Seu pedido foi registrado. Complete o pagamento abaixo para confirmar.'
+              }
+            </p>
+            {result.invoiceUrl && (
+              <a href={result.invoiceUrl} target="_blank" rel="noopener noreferrer" className="ck-btn-boleto-primary" style={{ marginTop: 4 }}>
+                <ExternalLink size={15} /> Ver recibo
+              </a>
+            )}
+          </div>
+
+          {/* PIX */}
+          {result.billingType === 'PIX' && (
+            <div className="ck-pix-box">
+              <p className="ck-pix-title">Escaneie o QR Code para pagar</p>
+              {result.pixQrCodeBase64
+                ? <img src={`data:image/png;base64,${result.pixQrCodeBase64}`} alt="QR Code PIX" className="ck-pix-qr" />
+                : <div className="ck-pix-qr-ph"><Loader size={28} /></div>
+              }
+              {result.pixPayload && (
+                <>
+                  <div className="ck-pix-payload-wrap">
+                    <textarea className="ck-pix-payload" rows={3} readOnly value={result.pixPayload} />
+                    <button className="ck-pix-copy-btn" onClick={() => copyText(result.pixPayload!)} title="Copiar">
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                  <button className="ck-btn-copy-full" onClick={() => copyText(result.pixPayload!)}>
+                    <Copy size={15} />
+                    {copied ? 'Copiado!' : 'Copiar código PIX'}
+                  </button>
+                </>
+              )}
+              {result.pixExpirationDate && (
+                <p className="ck-pix-exp">
+                  Expira em: {new Date(result.pixExpirationDate).toLocaleString('pt-BR')}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Boleto */}
+          {result.billingType === 'BOLETO' && (
+            <div className="ck-boleto-box">
+              <p className="ck-boleto-title">Boleto gerado — vence em 3 dias úteis</p>
+              {result.boletoBarCode && (
+                <div className="ck-boleto-barcode" onClick={() => copyText(result.boletoBarCode!)} title="Clique para copiar">
+                  {result.boletoBarCode}
+                </div>
+              )}
+              <div className="ck-boleto-row">
+                {result.boletoUrl && (
+                  <a href={result.boletoUrl} target="_blank" rel="noopener noreferrer" className="ck-btn-boleto-primary">
+                    <ExternalLink size={15} /> Abrir boleto
+                  </a>
+                )}
+                {result.boletoBarCode && (
+                  <button className="ck-btn-boleto-secondary" onClick={() => copyText(result.boletoBarCode!)}>
+                    <Copy size={14} /> Copiar código
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Ações pós-resultado */}
+          <div className="ck-result-actions">
+            <Link to="/" className="ck-btn-home">
+              <ChevronLeft size={15} /> Início
+            </Link>
+            <Link to="/loja" className="ck-btn-shop">
+              Continuar comprando
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ══ FORMULÁRIO — layout 2 colunas ══ */}
+      {step !== 'resultado' && (
+        <div className="ck-main">
+
+          {/* Coluna esquerda — formulário */}
+          <div className="ck-form-col">
+
+            {/* ── ETAPA 1: Dados do cliente ── */}
+            {step === 'cliente' && (
+              <div className="ck-card">
+                <div className="ck-card-header">
+                  <div className="ck-card-icon"><User size={20} /></div>
+                  <div>
+                    <h2 className="ck-card-title">Identificação</h2>
+                    <p className="ck-card-subtitle">Informe seus dados para o pedido</p>
+                  </div>
+                </div>
+
+                {isLoggedIn ? (
+                  <div className="ck-info" style={{ marginBottom: 24 }}>
+                    <CheckCircle size={16} className="ck-info-icon" />
+                    <p>
+                      Logado como <strong>{comprador?.nome}</strong>. Seus dados foram preenchidos automaticamente.{' '}
+                      <Link to="/minha-conta" style={{ color: 'var(--sage-deep)', fontWeight: 700, textDecoration: 'none' }}>
+                        Editar perfil
+                      </Link>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="ck-info" style={{ marginBottom: 24 }}>
+                    <User size={16} className="ck-info-icon" />
+                    <p>
+                      Tem conta?{' '}
+                      <Link to="/login-comprador" style={{ color: 'var(--sage-deep)', fontWeight: 700, textDecoration: 'none' }}>
+                        Entre para preencher seus dados automaticamente
+                      </Link>
+                    </p>
+                  </div>
+                )}
+
+                <div className="ck-fields ck-fields--2">
+                  {clienteField('nome',     'Nome completo',  'João da Silva',      'text', true)}
+                  {clienteField('cpfCnpj',  'CPF / CNPJ',     '000.000.000-00',     'text', true)}
+                  {clienteField('email',    'E-mail',         'joao@email.com',     'email')}
+                  {clienteField('telefone', 'Telefone',       '(11) 99999-9999',    'tel')}
+                </div>
+
+                <div className="ck-divider" style={{ marginTop: 24, marginBottom: 20 }} />
+
+                <h3 className="ck-label" style={{ marginBottom: 16 }}>Endereço <span style={{ color: 'var(--fg-3)', textTransform: 'none', fontWeight: 500 }}>(opcional)</span></h3>
+                <div className="ck-fields ck-fields--2">
+                  {clienteField('cep',      'CEP',    '00000-000')}
+                  {clienteField('uf',       'UF',     'SP')}
+                  {clienteField('cidade',   'Cidade', 'São Paulo')}
+                  {clienteField('bairro',   'Bairro', 'Centro')}
+                  {clienteField('endereco', 'Rua',    'Rua das Flores')}
+                  {clienteField('numero',   'Número', '123')}
+                </div>
+
+                <div className="ck-actions" style={{ marginTop: 28 }}>
+                  <button className="ck-btn-back" onClick={() => navigate('/carrinho')}>
+                    <ChevronLeft size={15} /> Carrinho
+                  </button>
+                  <button className="ck-btn-submit" onClick={() => { if (validateCliente()) setStep('pagamento'); }}>
+                    Continuar <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── ETAPA 2: Pagamento ── */}
+            {step === 'pagamento' && (
+              <div className="ck-card">
+                <div className="ck-card-header">
+                  <div className="ck-card-icon"><CreditCard size={20} /></div>
+                  <div>
+                    <h2 className="ck-card-title">Forma de pagamento</h2>
+                    <p className="ck-card-subtitle">Escolha como deseja pagar</p>
+                  </div>
+                </div>
+
+                <div className="ck-methods">
+                  {METHODS.map(m => (
+                    <button
+                      key={m.type}
+                      className={`ck-method${billing === m.type ? ' ck-method--active' : ''}`}
+                      onClick={() => setBilling(m.type)}
+                    >
+                      {m.badge && <span className="ck-method-badge">{m.badge}</span>}
+                      <div className="ck-method-icon">{m.icon}</div>
+                      <span className="ck-method-name">{m.label}</span>
+                      <span className="ck-method-desc">{m.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Campos do cartão */}
+                {billing === 'CREDIT_CARD' && (
+                  <>
+                    <div className="ck-divider" style={{ marginTop: 24, marginBottom: 20 }} />
+                    <h3 className="ck-label" style={{ marginBottom: 16 }}>Dados do cartão</h3>
+                    <div className="ck-fields">
+                      {cardField('holderName', 'Nome no cartão', 'JOÃO DA SILVA')}
+                      {cardField('number',     'Número',         '0000 0000 0000 0000', 'text', 19)}
+                    </div>
+                    <div className="ck-fields ck-fields--1-1-2" style={{ marginTop: 16 }}>
+                      {cardField('expiryMonth', 'Mês', '12')}
+                      {cardField('expiryYear',  'Ano', '2030')}
+                      {cardField('ccv',         'CVV', '123', 'text', 4)}
+                    </div>
+                    <div className="ck-field" style={{ marginTop: 16 }}>
+                      <label className="ck-label">Parcelas</label>
+                      <select
+                        className="ck-input"
+                        value={card.installmentCount}
+                        onChange={e => setCard(p => ({ ...p, installmentCount: Number(e.target.value) }))}
+                      >
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+                          <option key={n} value={n}>{n}× sem juros</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {apiError && (
+                  <div className="ck-api-error" style={{ marginTop: 16 }}>
+                    <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                    {apiError}
+                  </div>
+                )}
+
+                <div className="ck-actions" style={{ marginTop: 24 }}>
+                  <button className="ck-btn-back" onClick={() => setStep('cliente')}>
+                    <ChevronLeft size={15} /> Voltar
+                  </button>
+                  <button className="ck-btn-submit" onClick={handleSubmit} disabled={loading}>
+                    {loading
+                      ? <><div className="ck-spinner" /> Processando…</>
+                      : <>Confirmar pedido <ChevronRight size={16} /></>
+                    }
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Coluna direita — resumo */}
+          <aside className="ck-summary-col">
+            <div className="ck-summary-card">
+              <div className="ck-summary-head">
+                <span className="ck-summary-head-title">Resumo do pedido</span>
+                <span className="ck-summary-count">{items.length} {items.length === 1 ? 'item' : 'itens'}</span>
+              </div>
+
+              <div className="ck-summary-items">
+                {items.map(({ produto, qty }) => {
+                  const img = produto.imagemUrls?.[0];
+                  return (
+                    <div key={produto.produtoId} className="ck-summary-item">
+                      {img
+                        ? <img src={img} alt={produto.nomeProduto} className="ck-summary-img" />
+                        : <div className="ck-summary-img-ph" />
+                      }
+                      <div>
+                        <p className="ck-summary-name">{produto.nomeProduto}</p>
+                        {produto.embalagem && (
+                          <p className="ck-summary-meta">{produto.embalagem}</p>
+                        )}
+                      </div>
+                      <span className="ck-summary-qty">× {qty}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="ck-summary-foot">
+                {items.map(({ produto, qty }) => (
+                  <div key={produto.produtoId} className="ck-summary-row">
+                    <span className="ck-summary-row-label">
+                      {produto.nomeProduto} <span style={{ color: 'var(--fg-3)', fontWeight: 400 }}>× {qty}</span>
+                    </span>
+                    <span className="ck-summary-row-val">{formatBRL(produto.valorVenda * qty)}</span>
+                  </div>
+                ))}
+                <div className="ck-summary-total">
+                  <span className="ck-summary-total-label">Total</span>
+                  <span className="ck-summary-total-val">{formatBRL(totalValor)}</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      <Footer />
+    </div>
+  );
+};
+
+export default Checkout;
