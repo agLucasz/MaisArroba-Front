@@ -39,6 +39,22 @@ const METHODS: { type: BillingType; label: string; desc: string; icon: React.Rea
   { type: 'CREDIT_CARD', label: 'Cartão', desc: 'Crédito em até 12×',              icon: <CreditCard size={22} /> },
 ];
 
+// ── Taxas Asaas ─────────────────────────────────────────────────────────────
+
+function getAsaasRate(parcelas: number): number {
+  if (parcelas <= 1) return 0.0299;
+  if (parcelas <= 6) return 0.0349;
+  if (parcelas <= 12) return 0.0399;
+  return 0.0429;
+}
+
+// Loja absorve 1x–3x; cliente absorve 4x+ via gross-up
+function calcTotalComTaxa(total: number, parcelas: number): number {
+  if (parcelas <= 3) return total;
+  const rate = getAsaasRate(parcelas);
+  return Math.round((total / (1 - rate)) * 100) / 100;
+}
+
 const STEP_LABELS: { key: Step; label: string }[] = [
   { key: 'cliente',   label: 'Seus dados'  },
   { key: 'pagamento', label: 'Pagamento'   },
@@ -85,7 +101,10 @@ const Checkout: React.FC = () => {
     });
   }, [comprador]);
 
-  const totalValor = items.reduce((s, i) => s + i.produto.valorVenda * i.qty, 0);
+  const totalValor   = items.reduce((s, i) => s + i.produto.valorVenda * i.qty, 0);
+  const valorEfetivo = billing === 'CREDIT_CARD'
+    ? calcTotalComTaxa(totalValor, card.installmentCount)
+    : totalValor;
   const formatBRL  = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const stepIndex  = STEP_LABELS.findIndex(s => s.key === step);
 
@@ -433,9 +452,16 @@ const Checkout: React.FC = () => {
                         value={card.installmentCount}
                         onChange={e => setCard(p => ({ ...p, installmentCount: Number(e.target.value) }))}
                       >
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
-                          <option key={n} value={n}>{n}× sem juros</option>
-                        ))}
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
+                          const totalN   = calcTotalComTaxa(totalValor, n);
+                          const parcela  = formatBRL(totalN / n);
+                          const temJuros = n > 3;
+                          return (
+                            <option key={n} value={n}>
+                              {n}x de {parcela}{temJuros ? ` (total ${formatBRL(totalN)})` : ' • sem juros'}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                   </>
@@ -503,8 +529,13 @@ const Checkout: React.FC = () => {
                 ))}
                 <div className="ck-summary-total">
                   <span className="ck-summary-total-label">Total</span>
-                  <span className="ck-summary-total-val">{formatBRL(totalValor)}</span>
+                  <span className="ck-summary-total-val">{formatBRL(valorEfetivo)}</span>
                 </div>
+                {billing === 'CREDIT_CARD' && card.installmentCount > 3 && (
+                  <p className="ck-summary-fee-note">
+                    Inclui taxa de parcelamento ({(getAsaasRate(card.installmentCount) * 100).toFixed(2).replace('.', ',')}%)
+                  </p>
+                )}
               </div>
             </div>
           </aside>
