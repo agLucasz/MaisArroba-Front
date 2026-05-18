@@ -50,10 +50,13 @@ interface ImageSlotsProps {
   uploading: boolean;
   onAdd: (files: FileList) => void;
   onRemove: (index: number) => void;
+  onReorder: (from: number, to: number) => void;
 }
 
-const ImageSlots: React.FC<ImageSlotsProps> = ({ slots, uploading, onAdd, onRemove }) => {
+const ImageSlots: React.FC<ImageSlotsProps> = ({ slots, uploading, onAdd, onRemove, onReorder }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const dragIdx  = useRef<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) onAdd(e.target.files);
@@ -64,11 +67,31 @@ const ImageSlots: React.FC<ImageSlotsProps> = ({ slots, uploading, onAdd, onRemo
 
   return (
     <div className="modal-field">
-      <span className="modal-label">Imagens</span>
+      <span className="modal-label">
+        Imagens
+        {slots.length > 1 && !uploading && (
+          <span className="img-reorder-hint"> · arraste para reordenar</span>
+        )}
+      </span>
       <div className="img-slots">
         {slots.map((slot, i) => (
-          <div key={i} className="img-slot img-slot--filled">
+          <div
+            key={i}
+            className={`img-slot img-slot--filled${overIdx === i ? ' img-slot--drop-here' : ''}`}
+            draggable={!uploading && slots.length > 1}
+            onDragStart={e => { dragIdx.current = i; e.dataTransfer.effectAllowed = 'move'; }}
+            onDragOver={e => { e.preventDefault(); if (dragIdx.current !== i) setOverIdx(i); }}
+            onDragLeave={() => setOverIdx(null)}
+            onDrop={e => {
+              e.preventDefault();
+              if (dragIdx.current !== null && dragIdx.current !== i) onReorder(dragIdx.current, i);
+              dragIdx.current = null;
+              setOverIdx(null);
+            }}
+            onDragEnd={() => { dragIdx.current = null; setOverIdx(null); }}
+          >
             <img src={slot.preview} alt={`Imagem ${i + 1}`} />
+            <span className="img-slot-num">{i + 1}</span>
             {!uploading && (
               <button
                 type="button"
@@ -128,10 +151,13 @@ interface EditImageSlotsProps {
   uploading: boolean;
   onAdd: (files: FileList) => void;
   onRemove: (index: number) => void;
+  onReorder: (from: number, to: number) => void;
 }
 
-const EditImageSlots: React.FC<EditImageSlotsProps> = ({ entries, uploading, onAdd, onRemove }) => {
+const EditImageSlots: React.FC<EditImageSlotsProps> = ({ entries, uploading, onAdd, onRemove, onReorder }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const dragIdx  = useRef<number | null>(null);
+  const [overIdx, setOverIdx] = useState<number | null>(null);
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) onAdd(e.target.files);
@@ -142,13 +168,33 @@ const EditImageSlots: React.FC<EditImageSlotsProps> = ({ entries, uploading, onA
 
   return (
     <div className="modal-field">
-      <span className="modal-label">Imagens</span>
+      <span className="modal-label">
+        Imagens
+        {entries.length > 1 && !uploading && (
+          <span className="img-reorder-hint"> · arraste para reordenar</span>
+        )}
+      </span>
       <div className="img-slots">
         {entries.map((entry, i) => {
           const preview = entry.kind === 'existing' ? entry.url : entry.preview;
           return (
-            <div key={i} className="img-slot img-slot--filled">
+            <div
+              key={i}
+              className={`img-slot img-slot--filled${overIdx === i ? ' img-slot--drop-here' : ''}`}
+              draggable={!uploading && entries.length > 1}
+              onDragStart={e => { dragIdx.current = i; e.dataTransfer.effectAllowed = 'move'; }}
+              onDragOver={e => { e.preventDefault(); if (dragIdx.current !== i) setOverIdx(i); }}
+              onDragLeave={() => setOverIdx(null)}
+              onDrop={e => {
+                e.preventDefault();
+                if (dragIdx.current !== null && dragIdx.current !== i) onReorder(dragIdx.current, i);
+                dragIdx.current = null;
+                setOverIdx(null);
+              }}
+              onDragEnd={() => { dragIdx.current = null; setOverIdx(null); }}
+            >
               <img src={preview} alt={`Imagem ${i + 1}`} />
+              <span className="img-slot-num">{i + 1}</span>
               {!uploading && (
                 <button
                   type="button"
@@ -282,6 +328,11 @@ const emptyForm = {
   quantidade: '',
   categoriaId: '',
   ativo: true,
+  freteHabilitado: true,
+  peso: '',
+  altura: '',
+  largura: '',
+  comprimento: '',
 };
 
 const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated }) => {
@@ -322,6 +373,15 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
     });
   };
 
+  const handleReorderImages = (from: number, to: number) => {
+    setSlots(prev => {
+      const arr = [...prev];
+      const [item] = arr.splice(from, 1);
+      arr.splice(to, 0, item);
+      return arr;
+    });
+  };
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     const catId = Number(form.categoriaId);
@@ -347,15 +407,20 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
     setLoading(true);
     try {
       await createProduto({
-        nomeProduto:  form.nomeProduto.trim(),
-        descricao:    form.descricao.trim() || undefined,
+        nomeProduto:     form.nomeProduto.trim(),
+        descricao:       form.descricao.trim() || undefined,
         imagemUrls,
-        quantidade:   Number(form.quantidade) || 0,
-        embalagem:    form.embalagem.trim(),
-        valorCompra:  parseFloat(form.valorCompra) || 0,
-        valorVenda:   parseFloat(form.valorVenda) || 0,
-        categoriaIds: [catId],
-        ativo: form.ativo,
+        quantidade:      Number(form.quantidade) || 0,
+        embalagem:       form.embalagem.trim(),
+        valorCompra:     parseFloat(form.valorCompra) || 0,
+        valorVenda:      parseFloat(form.valorVenda) || 0,
+        categoriaIds:    [catId],
+        ativo:           form.ativo,
+        freteHabilitado: form.freteHabilitado,
+        peso:            parseFloat(form.peso) || 0,
+        altura:          parseFloat(form.altura) || 0,
+        largura:         parseFloat(form.largura) || 0,
+        comprimento:     parseFloat(form.comprimento) || 0,
       });
       onCreated();
       onClose();
@@ -380,129 +445,216 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="modal-lg-body">
+          <div className="modal-lg-body--cols">
 
-            <div className="modal-field">
-              <label className="modal-label" htmlFor="p-nome">Nome do produto</label>
-              <input
-                ref={firstRef}
-                id="p-nome"
-                className="modal-input"
-                type="text"
-                placeholder="Ex.: MaisArroba Pasto Premium"
-                value={form.nomeProduto}
-                onChange={set('nomeProduto')}
-                maxLength={150}
-              />
-            </div>
+            {/* ── Coluna esquerda: dados do produto ── */}
+            <div className="modal-col modal-col--left">
 
-            <div className="modal-row modal-row-2">
               <div className="modal-field">
-                <label className="modal-label" htmlFor="p-cat">Categoria</label>
-                <select
-                  id="p-cat"
-                  className="modal-input modal-input--select"
-                  value={form.categoriaId}
-                  onChange={set('categoriaId')}
-                >
-                  <option value="">Selecione...</option>
-                  {categorias.map(c => (
-                    <option key={c.categoriaId} value={c.categoriaId}>{c.nomeCategoria}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="modal-field">
-                <label className="modal-label" htmlFor="p-embalagem">Embalagem</label>
+                <label className="modal-label" htmlFor="p-nome">Nome do produto</label>
                 <input
-                  id="p-embalagem"
+                  ref={firstRef}
+                  id="p-nome"
                   className="modal-input"
                   type="text"
-                  placeholder="Ex.: 30 kg"
-                  value={form.embalagem}
-                  onChange={set('embalagem')}
+                  placeholder="Ex.: MaisArroba Pasto Premium"
+                  value={form.nomeProduto}
+                  onChange={set('nomeProduto')}
+                  maxLength={150}
                 />
               </div>
+
+              <div className="modal-row modal-row-2">
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="p-cat">Categoria</label>
+                  <select
+                    id="p-cat"
+                    className="modal-input modal-input--select"
+                    value={form.categoriaId}
+                    onChange={set('categoriaId')}
+                  >
+                    <option value="">Selecione...</option>
+                    {categorias.map(c => (
+                      <option key={c.categoriaId} value={c.categoriaId}>{c.nomeCategoria}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="p-embalagem">Embalagem</label>
+                  <input
+                    id="p-embalagem"
+                    className="modal-input"
+                    type="text"
+                    placeholder="Ex.: 30 kg"
+                    value={form.embalagem}
+                    onChange={set('embalagem')}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-row modal-row-3">
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="p-compra">Preço de compra</label>
+                  <input
+                    id="p-compra"
+                    className="modal-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={form.valorCompra}
+                    onChange={set('valorCompra')}
+                  />
+                </div>
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="p-venda">Preço de venda</label>
+                  <input
+                    id="p-venda"
+                    className="modal-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={form.valorVenda}
+                    onChange={set('valorVenda')}
+                  />
+                </div>
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="p-qtd">Estoque</label>
+                  <input
+                    id="p-qtd"
+                    className="modal-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="0"
+                    value={form.quantidade}
+                    onChange={set('quantidade')}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-field">
+                <span className="modal-label">Frete</span>
+                <label className="frete-toggle">
+                  <input
+                    type="checkbox"
+                    className="prod-check"
+                    checked={form.freteHabilitado}
+                    onChange={e => setForm(prev => ({ ...prev, freteHabilitado: e.target.checked }))}
+                  />
+                  <span className="frete-toggle-text">Habilitar cálculo de frete para este produto</span>
+                </label>
+              </div>
+
+              <div className={`frete-fields${!form.freteHabilitado ? ' frete-fields--disabled' : ''}`}>
+                <div className="modal-row modal-row-2">
+                  <div className="modal-field">
+                    <label className="modal-label" htmlFor="p-peso">Peso (kg)</label>
+                    <input
+                      id="p-peso"
+                      className="modal-input"
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      placeholder="0.500"
+                      value={form.peso}
+                      onChange={set('peso')}
+                      disabled={!form.freteHabilitado}
+                    />
+                  </div>
+                  <div className="modal-field">
+                    <label className="modal-label" htmlFor="p-altura">Altura (cm)</label>
+                    <input
+                      id="p-altura"
+                      className="modal-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="15"
+                      value={form.altura}
+                      onChange={set('altura')}
+                      disabled={!form.freteHabilitado}
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-row modal-row-2">
+                  <div className="modal-field">
+                    <label className="modal-label" htmlFor="p-largura">Largura (cm)</label>
+                    <input
+                      id="p-largura"
+                      className="modal-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="11"
+                      value={form.largura}
+                      onChange={set('largura')}
+                      disabled={!form.freteHabilitado}
+                    />
+                  </div>
+                  <div className="modal-field">
+                    <label className="modal-label" htmlFor="p-comprimento">Comprimento (cm)</label>
+                    <input
+                      id="p-comprimento"
+                      className="modal-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="20"
+                      value={form.comprimento}
+                      onChange={set('comprimento')}
+                      disabled={!form.freteHabilitado}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-field">
+                <span className="modal-label">Status</span>
+                <div className="status-options">
+                  <button
+                    type="button"
+                    className={`status-option${form.ativo ? ' status-option--active' : ''}`}
+                    onClick={() => setForm(prev => ({ ...prev, ativo: true }))}
+                  >
+                    Ativo
+                  </button>
+                  <button
+                    type="button"
+                    className={`status-option${!form.ativo ? ' status-option--active' : ''}`}
+                    onClick={() => setForm(prev => ({ ...prev, ativo: false }))}
+                  >
+                    Rascunho
+                  </button>
+                </div>
+              </div>
+
+              {error && <div className="modal-error" role="alert">{error}</div>}
             </div>
 
-            <div className="modal-row modal-row-3">
-              <div className="modal-field">
-                <label className="modal-label" htmlFor="p-compra">Preço de compra</label>
-                <input
-                  id="p-compra"
-                  className="modal-input"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0,00"
-                  value={form.valorCompra}
-                  onChange={set('valorCompra')}
-                />
-              </div>
-              <div className="modal-field">
-                <label className="modal-label" htmlFor="p-venda">Preço de venda</label>
-                <input
-                  id="p-venda"
-                  className="modal-input"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0,00"
-                  value={form.valorVenda}
-                  onChange={set('valorVenda')}
-                />
-              </div>
-              <div className="modal-field">
-                <label className="modal-label" htmlFor="p-qtd">Estoque</label>
-                <input
-                  id="p-qtd"
-                  className="modal-input"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                  value={form.quantidade}
-                  onChange={set('quantidade')}
-                />
-              </div>
-            </div>
+            {/* ── Coluna direita: descrição e imagens ── */}
+            <div className="modal-col modal-col--right">
 
-            <div className="modal-field">
-              <label className="modal-label">Descrição</label>
-              <RichTextEditor
-                value={form.descricao}
-                onChange={html => setForm(prev => ({ ...prev, descricao: html }))}
-                placeholder="Descrição comercial do produto..."
+              <div className="modal-field">
+                <label className="modal-label">Descrição</label>
+                <RichTextEditor
+                  value={form.descricao}
+                  onChange={html => setForm(prev => ({ ...prev, descricao: html }))}
+                  placeholder="Descrição comercial do produto..."
+                />
+              </div>
+
+              <ImageSlots
+                slots={slots}
+                uploading={uploading}
+                onAdd={handleAddImages}
+                onRemove={handleRemoveImage}
+                onReorder={handleReorderImages}
               />
+
             </div>
-
-            <ImageSlots
-              slots={slots}
-              uploading={uploading}
-              onAdd={handleAddImages}
-              onRemove={handleRemoveImage}
-            />
-
-            <div className="modal-field">
-              <span className="modal-label">Status</span>
-              <div className="status-options">
-                <button
-                  type="button"
-                  className={`status-option${form.ativo ? ' status-option--active' : ''}`}
-                  onClick={() => setForm(prev => ({ ...prev, ativo: true }))}
-                >
-                  Ativo
-                </button>
-                <button
-                  type="button"
-                  className={`status-option${!form.ativo ? ' status-option--active' : ''}`}
-                  onClick={() => setForm(prev => ({ ...prev, ativo: false }))}
-                >
-                  Rascunho
-                </button>
-              </div>
-            </div>
-
-            {error && <div className="modal-error" role="alert">{error}</div>}
           </div>
 
           <div className="modal-lg-footer">
@@ -531,14 +683,19 @@ interface EditProdutoModalProps {
 
 const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categorias, onClose, onSaved }) => {
   const [form, setForm] = useState({
-    nomeProduto: produto.nomeProduto,
-    descricao:   produto.descricao ?? '',
-    embalagem:   produto.embalagem,
-    valorCompra: produto.valorCompra.toString(),
-    valorVenda:  produto.valorVenda.toString(),
-    quantidade:  produto.quantidade.toString(),
-    categoriaId: produto.categoriaIds[0]?.toString() ?? '',
-    ativo:       produto.ativo,
+    nomeProduto:     produto.nomeProduto,
+    descricao:       produto.descricao ?? '',
+    embalagem:       produto.embalagem,
+    valorCompra:     produto.valorCompra.toString(),
+    valorVenda:      produto.valorVenda.toString(),
+    quantidade:      produto.quantidade.toString(),
+    categoriaId:     produto.categoriaIds[0]?.toString() ?? '',
+    ativo:           produto.ativo,
+    freteHabilitado: produto.freteHabilitado,
+    peso:            produto.peso?.toString() ?? '0',
+    altura:          produto.altura?.toString() ?? '0',
+    largura:         produto.largura?.toString() ?? '0',
+    comprimento:     produto.comprimento?.toString() ?? '0',
   });
   const [entries, setEntries]     = useState<EditImageEntry[]>(
     produto.imagemUrls.map(url => ({ kind: 'existing', url }))
@@ -582,6 +739,15 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
     });
   };
 
+  const handleReorderEntries = (from: number, to: number) => {
+    setEntries(prev => {
+      const arr = [...prev];
+      const [item] = arr.splice(from, 1);
+      arr.splice(to, 0, item);
+      return arr;
+    });
+  };
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     const catId = Number(form.categoriaId);
@@ -592,7 +758,6 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
     setError('');
 
     const newEntries = entries.filter((e): e is Extract<EditImageEntry, { kind: 'new' }> => e.kind === 'new');
-    const keptUrls   = entries.filter(e => e.kind === 'existing').map(e => (e as { kind: 'existing'; url: string }).url);
 
     let uploadedUrls: string[] = [];
     if (newEntries.length > 0) {
@@ -607,18 +772,28 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
       setUploading(false);
     }
 
+    // Preserva a ordem definida pelo drag-and-drop
+    let newIdx = 0;
+    const imagemUrls = entries.map(e =>
+      e.kind === 'existing' ? e.url : uploadedUrls[newIdx++]);
+
     setLoading(true);
     try {
       await updateProduto(produto.produtoId, {
-        nomeProduto:  form.nomeProduto.trim(),
-        descricao:    form.descricao.trim() || undefined,
-        imagemUrls:   [...keptUrls, ...uploadedUrls],
-        quantidade:   Number(form.quantidade) || 0,
-        embalagem:    form.embalagem.trim(),
-        valorCompra:  parseFloat(form.valorCompra) || 0,
-        valorVenda:   parseFloat(form.valorVenda) || 0,
-        categoriaIds: [catId],
-        ativo: form.ativo,
+        nomeProduto:     form.nomeProduto.trim(),
+        descricao:       form.descricao.trim() || undefined,
+        imagemUrls,
+        quantidade:      Number(form.quantidade) || 0,
+        embalagem:       form.embalagem.trim(),
+        valorCompra:     parseFloat(form.valorCompra) || 0,
+        valorVenda:      parseFloat(form.valorVenda) || 0,
+        categoriaIds:    [catId],
+        ativo:           form.ativo,
+        freteHabilitado: form.freteHabilitado,
+        peso:            parseFloat(form.peso) || 0,
+        altura:          parseFloat(form.altura) || 0,
+        largura:         parseFloat(form.largura) || 0,
+        comprimento:     parseFloat(form.comprimento) || 0,
       });
       onSaved();
       onClose();
@@ -643,123 +818,210 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="modal-lg-body">
+          <div className="modal-lg-body--cols">
 
-            <div className="modal-field">
-              <label className="modal-label" htmlFor="pe-nome">Nome do produto</label>
-              <input
-                ref={firstRef}
-                id="pe-nome"
-                className="modal-input"
-                type="text"
-                value={form.nomeProduto}
-                onChange={set('nomeProduto')}
-                maxLength={150}
-              />
-            </div>
+            {/* ── Coluna esquerda: dados do produto ── */}
+            <div className="modal-col modal-col--left">
 
-            <div className="modal-row modal-row-2">
               <div className="modal-field">
-                <label className="modal-label" htmlFor="pe-cat">Categoria</label>
-                <select
-                  id="pe-cat"
-                  className="modal-input modal-input--select"
-                  value={form.categoriaId}
-                  onChange={set('categoriaId')}
-                >
-                  <option value="">Selecione...</option>
-                  {categorias.map(c => (
-                    <option key={c.categoriaId} value={c.categoriaId}>{c.nomeCategoria}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="modal-field">
-                <label className="modal-label" htmlFor="pe-embalagem">Embalagem</label>
+                <label className="modal-label" htmlFor="pe-nome">Nome do produto</label>
                 <input
-                  id="pe-embalagem"
+                  ref={firstRef}
+                  id="pe-nome"
                   className="modal-input"
                   type="text"
-                  value={form.embalagem}
-                  onChange={set('embalagem')}
+                  value={form.nomeProduto}
+                  onChange={set('nomeProduto')}
+                  maxLength={150}
                 />
               </div>
+
+              <div className="modal-row modal-row-2">
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="pe-cat">Categoria</label>
+                  <select
+                    id="pe-cat"
+                    className="modal-input modal-input--select"
+                    value={form.categoriaId}
+                    onChange={set('categoriaId')}
+                  >
+                    <option value="">Selecione...</option>
+                    {categorias.map(c => (
+                      <option key={c.categoriaId} value={c.categoriaId}>{c.nomeCategoria}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="pe-embalagem">Embalagem</label>
+                  <input
+                    id="pe-embalagem"
+                    className="modal-input"
+                    type="text"
+                    value={form.embalagem}
+                    onChange={set('embalagem')}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-row modal-row-3">
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="pe-compra">Preço de compra</label>
+                  <input
+                    id="pe-compra"
+                    className="modal-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.valorCompra}
+                    onChange={set('valorCompra')}
+                  />
+                </div>
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="pe-venda">Preço de venda</label>
+                  <input
+                    id="pe-venda"
+                    className="modal-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.valorVenda}
+                    onChange={set('valorVenda')}
+                  />
+                </div>
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="pe-qtd">Estoque</label>
+                  <input
+                    id="pe-qtd"
+                    className="modal-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.quantidade}
+                    onChange={set('quantidade')}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-field">
+                <span className="modal-label">Frete</span>
+                <label className="frete-toggle">
+                  <input
+                    type="checkbox"
+                    className="prod-check"
+                    checked={form.freteHabilitado}
+                    onChange={e => setForm(prev => ({ ...prev, freteHabilitado: e.target.checked }))}
+                  />
+                  <span className="frete-toggle-text">Habilitar cálculo de frete para este produto</span>
+                </label>
+              </div>
+
+              <div className={`frete-fields${!form.freteHabilitado ? ' frete-fields--disabled' : ''}`}>
+                <div className="modal-row modal-row-2">
+                  <div className="modal-field">
+                    <label className="modal-label" htmlFor="pe-peso">Peso (kg)</label>
+                    <input
+                      id="pe-peso"
+                      className="modal-input"
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      placeholder="0.500"
+                      value={form.peso}
+                      onChange={set('peso')}
+                      disabled={!form.freteHabilitado}
+                    />
+                  </div>
+                  <div className="modal-field">
+                    <label className="modal-label" htmlFor="pe-altura">Altura (cm)</label>
+                    <input
+                      id="pe-altura"
+                      className="modal-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="15"
+                      value={form.altura}
+                      onChange={set('altura')}
+                      disabled={!form.freteHabilitado}
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-row modal-row-2">
+                  <div className="modal-field">
+                    <label className="modal-label" htmlFor="pe-largura">Largura (cm)</label>
+                    <input
+                      id="pe-largura"
+                      className="modal-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="11"
+                      value={form.largura}
+                      onChange={set('largura')}
+                      disabled={!form.freteHabilitado}
+                    />
+                  </div>
+                  <div className="modal-field">
+                    <label className="modal-label" htmlFor="pe-comprimento">Comprimento (cm)</label>
+                    <input
+                      id="pe-comprimento"
+                      className="modal-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="20"
+                      value={form.comprimento}
+                      onChange={set('comprimento')}
+                      disabled={!form.freteHabilitado}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-field">
+                <span className="modal-label">Status</span>
+                <div className="status-options">
+                  <button
+                    type="button"
+                    className={`status-option${form.ativo ? ' status-option--active' : ''}`}
+                    onClick={() => setForm(prev => ({ ...prev, ativo: true }))}
+                  >
+                    Ativo
+                  </button>
+                  <button
+                    type="button"
+                    className={`status-option${!form.ativo ? ' status-option--active' : ''}`}
+                    onClick={() => setForm(prev => ({ ...prev, ativo: false }))}
+                  >
+                    Rascunho
+                  </button>
+                </div>
+              </div>
+
+              {error && <div className="modal-error" role="alert">{error}</div>}
             </div>
 
-            <div className="modal-row modal-row-3">
-              <div className="modal-field">
-                <label className="modal-label" htmlFor="pe-compra">Preço de compra</label>
-                <input
-                  id="pe-compra"
-                  className="modal-input"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.valorCompra}
-                  onChange={set('valorCompra')}
-                />
-              </div>
-              <div className="modal-field">
-                <label className="modal-label" htmlFor="pe-venda">Preço de venda</label>
-                <input
-                  id="pe-venda"
-                  className="modal-input"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.valorVenda}
-                  onChange={set('valorVenda')}
-                />
-              </div>
-              <div className="modal-field">
-                <label className="modal-label" htmlFor="pe-qtd">Estoque</label>
-                <input
-                  id="pe-qtd"
-                  className="modal-input"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={form.quantidade}
-                  onChange={set('quantidade')}
-                />
-              </div>
-            </div>
+            {/* ── Coluna direita: descrição e imagens ── */}
+            <div className="modal-col modal-col--right">
 
-            <div className="modal-field">
-              <label className="modal-label">Descrição</label>
-              <RichTextEditor
-                value={form.descricao}
-                onChange={html => setForm(prev => ({ ...prev, descricao: html }))}
+              <div className="modal-field">
+                <label className="modal-label">Descrição</label>
+                <RichTextEditor
+                  value={form.descricao}
+                  onChange={html => setForm(prev => ({ ...prev, descricao: html }))}
+                />
+              </div>
+
+              <EditImageSlots
+                entries={entries}
+                uploading={uploading}
+                onAdd={handleAddImages}
+                onRemove={handleRemoveEntry}
+                onReorder={handleReorderEntries}
               />
+
             </div>
-
-            <EditImageSlots
-              entries={entries}
-              uploading={uploading}
-              onAdd={handleAddImages}
-              onRemove={handleRemoveEntry}
-            />
-
-            <div className="modal-field">
-              <span className="modal-label">Status</span>
-              <div className="status-options">
-                <button
-                  type="button"
-                  className={`status-option${form.ativo ? ' status-option--active' : ''}`}
-                  onClick={() => setForm(prev => ({ ...prev, ativo: true }))}
-                >
-                  Ativo
-                </button>
-                <button
-                  type="button"
-                  className={`status-option${!form.ativo ? ' status-option--active' : ''}`}
-                  onClick={() => setForm(prev => ({ ...prev, ativo: false }))}
-                >
-                  Rascunho
-                </button>
-              </div>
-            </div>
-
-            {error && <div className="modal-error" role="alert">{error}</div>}
           </div>
 
           <div className="modal-lg-footer">
@@ -827,6 +1089,25 @@ const VisualizarProdutoModal: React.FC<VisualizarProdutoModalProps> = ({ produto
             <div className="modal-field">
               <label className="modal-label">Estoque</label>
               <input className="modal-input" type="text" value={`${produto.quantidade} un`} readOnly />
+            </div>
+          </div>
+
+          <div className="modal-row modal-row-4">
+            <div className="modal-field">
+              <label className="modal-label">Peso</label>
+              <input className="modal-input" type="text" value={`${produto.peso ?? 0} kg`} readOnly />
+            </div>
+            <div className="modal-field">
+              <label className="modal-label">Altura</label>
+              <input className="modal-input" type="text" value={`${produto.altura ?? 0} cm`} readOnly />
+            </div>
+            <div className="modal-field">
+              <label className="modal-label">Largura</label>
+              <input className="modal-input" type="text" value={`${produto.largura ?? 0} cm`} readOnly />
+            </div>
+            <div className="modal-field">
+              <label className="modal-label">Comprimento</label>
+              <input className="modal-input" type="text" value={`${produto.comprimento ?? 0} cm`} readOnly />
             </div>
           </div>
 

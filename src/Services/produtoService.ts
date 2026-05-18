@@ -12,6 +12,11 @@ export interface ProdutoDTO {
   categoriaIds: number[];
   categorias: string[];
   ativo: boolean;
+  freteHabilitado: boolean;
+  peso: number;
+  altura: number;
+  largura: number;
+  comprimento: number;
 }
 
 export interface ProdutoCreatePayload {
@@ -24,6 +29,11 @@ export interface ProdutoCreatePayload {
   valorVenda: number;
   categoriaIds: number[];
   ativo: boolean;
+  freteHabilitado: boolean;
+  peso: number;
+  altura: number;
+  largura: number;
+  comprimento: number;
 }
 
 export async function getProdutos(): Promise<ProdutoDTO[]> {

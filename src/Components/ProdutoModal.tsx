@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, MessageCircle, ShoppingCart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, MessageCircle, ShoppingCart, Truck, MapPin, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { type ProdutoDTO } from '../Services/produtoService';
 import { useCart } from '../Contexts/CartContext';
+import { useCalculoFrete } from '../hooks/useCalculoFrete';
 import Header from './Header';
 import Footer from './Footer';
 import '../Styles/produtoModal.css';
@@ -19,6 +20,15 @@ const ProdutoModal: React.FC<Props> = ({ produto, onClose }) => {
   const [qty, setQty]             = useState(1);
   const { addItem }               = useCart();
   const navigate                  = useNavigate();
+
+  const {
+    cep, setCep,
+    endereco, fretes, freteSelected, setFreteSelected,
+    loadingEndereco, loadingFrete,
+    erro: freteErro,
+  } = useCalculoFrete({ produtoId: produto.freteHabilitado ? produto.produtoId : null });
+
+  const cepMask = cep.length > 5 ? `${cep.slice(0, 5)}-${cep.slice(5)}` : cep;
 
   const images    = produto.imagemUrls ?? [];
   const hasImages = images.length > 0;
@@ -167,6 +177,92 @@ const ProdutoModal: React.FC<Props> = ({ produto, onClose }) => {
           )}
 
           <div className="pm-divider" />
+
+          {/* Calcular frete */}
+          {produto.freteHabilitado ? (
+            <div className="pm-frete">
+              <div className="pm-frete-header">
+                <Truck size={15} />
+                <span>Calcular frete</span>
+              </div>
+
+              <div className="pm-frete-input-row">
+                <input
+                  className="pm-frete-input"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="00000-000"
+                  maxLength={9}
+                  value={cepMask}
+                  onChange={e => setCep(e.target.value)}
+                  aria-label="CEP para cálculo de frete"
+                />
+                {(loadingEndereco || loadingFrete) && (
+                  <Loader2 size={15} className="pm-frete-spinner" />
+                )}
+              </div>
+
+              {endereco && (
+                <div className="pm-frete-endereco">
+                  <MapPin size={11} />
+                  <span>
+                    {[endereco.logradouro, endereco.bairro].filter(Boolean).join(', ')}
+                    {endereco.cidade ? ` — ${endereco.cidade}/${endereco.uf}` : ''}
+                  </span>
+                </div>
+              )}
+
+              {freteErro && (
+                <p className="pm-frete-error">{freteErro}</p>
+              )}
+
+              {fretes.length > 0 && (
+                <div className="pm-frete-opcoes">
+                  {fretes.map((f, i) => (
+                    <label
+                      key={i}
+                      className={`pm-frete-opcao${freteSelected === f ? ' pm-frete-opcao--active' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="pm-frete"
+                        checked={freteSelected === f}
+                        onChange={() => setFreteSelected(f)}
+                      />
+                      <div className="pm-frete-opcao-info">
+                        <span className="pm-frete-opcao-nome">
+                          {f.transportadora} — {f.servico}
+                        </span>
+                        <span className="pm-frete-opcao-prazo">
+                          {f.prazo} dia{f.prazo !== 1 ? 's' : ''} úteis
+                        </span>
+                      </div>
+                      <span className="pm-frete-opcao-valor">
+                        {f.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="pm-frete">
+              <div className="pm-frete-header">
+                <Truck size={15} />
+                <span>Frete</span>
+              </div>
+              <div className="pm-frete-gratis">
+                <div className="pm-frete-gratis-icon">
+                  <Truck size={18} />
+                </div>
+                <div className="pm-frete-gratis-info">
+                  <span className="pm-frete-gratis-titulo">Frete Grátis</span>
+                  <span className="pm-frete-gratis-sub">Entrega sem custo adicional</span>
+                </div>
+                <span className="pm-frete-gratis-valor">R$ 0,00</span>
+              </div>
+            </div>
+          )}
 
           {/* Quantidade */}
           <div className="pm-qty-row">

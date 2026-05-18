@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { type ProdutoDTO } from '../Services/produtoService';
 
 export interface CartItem {
@@ -15,10 +15,21 @@ interface CartContextValue {
   clearCart: () => void;
 }
 
+const CART_KEY = 'mais-arroba-cart';
+
+function loadCart(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    return raw ? (JSON.parse(raw) as CartItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 const CartContext = createContext<CartContextValue | null>(null);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(loadCart);
 
   const addItem = useCallback((produto: ProdutoDTO, qty: number) => {
     setItems(prev => {
@@ -41,7 +52,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems(prev => prev.map(i => i.produto.produtoId === produtoId ? { ...i, qty } : i));
   }, []);
 
-  const clearCart = useCallback(() => setItems([]), []);
+  useEffect(() => {
+    localStorage.setItem(CART_KEY, JSON.stringify(items));
+  }, [items]);
+
+  const clearCart = useCallback(() => {
+    setItems([]);
+    localStorage.removeItem(CART_KEY);
+  }, []);
 
   const totalItems = items.reduce((sum, i) => sum + i.qty, 0);
 

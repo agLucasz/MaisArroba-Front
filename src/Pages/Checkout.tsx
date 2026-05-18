@@ -1,14 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   User, CreditCard, CheckCircle, ChevronLeft, ChevronRight,
   Copy, ExternalLink, Loader, QrCode, FileText, AlertCircle,
+  Truck, MapPin, Loader2,
 } from 'lucide-react';
 import Header from '../Components/Header';
 import Footer from '../Components/Footer';
 import { useCart } from '../Contexts/CartContext';
 import { useComprador } from '../Contexts/CompradorContext';
 import { asaasService, type BillingType, type CheckoutResponse } from '../Services/asaasService';
+import {
+  buscarEnderecoPorCep,
+  calcularFrete,
+  type OpcaoFrete,
+} from '../Services/freteService';
 import '../Styles/checkout.css';
 
 type Step = 'cliente' | 'pagamento' | 'resultado';
@@ -76,6 +82,15 @@ const Checkout: React.FC = () => {
   const [result,   setResult]   = useState<CheckoutResponse | null>(null);
   const [copied,   setCopied]   = useState(false);
 
+  // Frete
+  const [cepFretes,      setCepFretes]      = useState<OpcaoFrete[]>([]);
+  const [freteSelected,  setFreteSelected]  = useState<OpcaoFrete | null>(null);
+  const [freteGratis,    setFreteGratis]    = useState(false);
+  const [loadingCep,     setLoadingCep]     = useState(false);
+  const [cepErro,        setCepErro]        = useState<string | null>(null);
+  const cepAbortRef = useRef<AbortController | null>(null);
+  const cepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     document.title = 'Finalizar pedido — MaisArroba';
   }, []);
@@ -100,6 +115,79 @@ const Checkout: React.FC = () => {
       uf:        comprador.uf,
     });
   }, [comprador]);
+
+  // CEP → auto-fill address + freight options
+  useEffect(() => {
+    if (cepTimerRef.current) clearTimeout(cepTimerRef.current);
+
+    const cepLimpo = cliente.cep.replace(/\D/g, '');
+    if (cepLimpo.length !== 8) {
+      setCepFretes([]);
+      setFreteSelected(null);
+      setCepErro(null);
+      setFreteGratis(false);
+      return;
+    }
+
+    cepTimerRef.current = setTimeout(async () => {
+      cepAbortRef.current?.abort();
+      cepAbortRef.current = new AbortController();
+      const signal = cepAbortRef.current.signal;
+
+      setLoadingCep(true);
+      setCepErro(null);
+
+      try {
+        const end = await buscarEnderecoPorCep(cepLimpo, signal);
+        setCliente(prev => ({
+          ...prev,
+          cidade:   end.cidade    || prev.cidade,
+          uf:       end.uf        || prev.uf,
+          bairro:   end.bairro    || prev.bairro,
+          endereco: end.logradouro || prev.endereco,
+        }));
+
+        const firstProduto = items[0]?.produto;
+        if (firstProduto) {
+          if (firstProduto.freteHabilitado === false) {
+            setFreteGratis(true);
+            setCepFretes([]);
+            setFreteSelected(null);
+          } else {
+            setFreteGratis(false);
+            const resultado = await calcularFrete(cepLimpo, firstProduto.produtoId, signal);
+            setCepFretes(resultado.fretes);
+            setFreteSelected(resultado.fretes[0] ?? null);
+          }
+        }
+      } catch (e: unknown) {
+        if ((e as Error).name === 'AbortError') return;
+        const msg = (e as Error).message ?? 'CEP não encontrado.';
+        if (msg === 'Frete Grátis') {
+          setFreteGratis(true);
+          setCepFretes([]);
+          setFreteSelected(null);
+          setCepErro(null);
+        } else {
+          setCepErro(msg);
+          setCepFretes([]);
+          setFreteSelected(null);
+          setFreteGratis(false);
+        }
+      } finally {
+        setLoadingCep(false);
+      }
+    }, 600);
+
+    return () => { if (cepTimerRef.current) clearTimeout(cepTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cliente.cep]);
+
+  // Cleanup on unmount
+  useEffect(() => () => {
+    cepAbortRef.current?.abort();
+    if (cepTimerRef.current) clearTimeout(cepTimerRef.current);
+  }, []);
 
   const totalValor   = items.reduce((s, i) => s + i.produto.valorVenda * i.qty, 0);
   const valorEfetivo = billing === 'CREDIT_CARD'
@@ -394,6 +482,63 @@ const Checkout: React.FC = () => {
                   {clienteField('numero',   'Número', '123')}
                 </div>
 
+                {/* Frete */}
+                {(loadingCep || cepFretes.length > 0 || cepErro || freteGratis) && (
+                  <div className="ck-frete">
+                    <div className="ck-frete-header">
+                      <Truck size={15} />
+                      <span>{freteGratis ? 'Frete' : 'Frete estimado'}</span>
+                      {loadingCep && <Loader2 size={14} className="ck-frete-spinner" />}
+                    </div>
+
+                    {cepErro && (
+                      <p className="ck-frete-error">{cepErro}</p>
+                    )}
+
+                    {freteGratis && (
+                      <div className="ck-frete-gratis">
+                        <div className="ck-frete-gratis-icon">
+                          <Truck size={18} />
+                        </div>
+                        <div className="ck-frete-gratis-info">
+                          <span className="ck-frete-gratis-titulo">Frete Grátis</span>
+                          <span className="ck-frete-gratis-sub">Entrega sem custo adicional</span>
+                        </div>
+                        <span className="ck-frete-gratis-valor">R$ 0,00</span>
+                      </div>
+                    )}
+
+                    {cepFretes.length > 0 && (
+                      <div className="ck-frete-opcoes">
+                        {cepFretes.map((f, i) => (
+                          <label
+                            key={i}
+                            className={`ck-frete-opcao${freteSelected === f ? ' ck-frete-opcao--active' : ''}`}
+                          >
+                            <input
+                              type="radio"
+                              name="ck-frete"
+                              checked={freteSelected === f}
+                              onChange={() => setFreteSelected(f)}
+                            />
+                            <div className="ck-frete-opcao-info">
+                              <span className="ck-frete-opcao-nome">
+                                {f.transportadora} — {f.servico}
+                              </span>
+                              <span className="ck-frete-opcao-prazo">
+                                {f.prazo} dia{f.prazo !== 1 ? 's' : ''} úteis
+                              </span>
+                            </div>
+                            <span className="ck-frete-opcao-valor">
+                              {f.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="ck-actions" style={{ marginTop: 28 }}>
                   <button className="ck-btn-back" onClick={() => navigate('/carrinho')}>
                     <ChevronLeft size={15} /> Carrinho
@@ -527,9 +672,29 @@ const Checkout: React.FC = () => {
                     <span className="ck-summary-row-val">{formatBRL(produto.valorVenda * qty)}</span>
                   </div>
                 ))}
+                {freteSelected && (
+                  <div className="ck-summary-row">
+                    <span className="ck-summary-row-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Truck size={12} style={{ color: 'var(--sage-deep)', flexShrink: 0 }} />
+                      {freteSelected.servico}
+                    </span>
+                    <span className="ck-summary-row-val">{formatBRL(freteSelected.valor)}</span>
+                  </div>
+                )}
+                {freteGratis && (
+                  <div className="ck-summary-row ck-summary-row--gratis">
+                    <span className="ck-summary-row-label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Truck size={12} style={{ flexShrink: 0 }} />
+                      Frete Grátis
+                    </span>
+                    <span className="ck-summary-row-val">R$ 0,00</span>
+                  </div>
+                )}
                 <div className="ck-summary-total">
                   <span className="ck-summary-total-label">Total</span>
-                  <span className="ck-summary-total-val">{formatBRL(valorEfetivo)}</span>
+                  <span className="ck-summary-total-val">
+                    {formatBRL(valorEfetivo + (freteSelected?.valor ?? 0))}
+                  </span>
                 </div>
                 {billing === 'CREDIT_CARD' && card.installmentCount > 3 && (
                   <p className="ck-summary-fee-note">

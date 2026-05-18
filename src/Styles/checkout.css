@@ -7,6 +7,7 @@
   background: var(--bg);
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* ── Barra de progresso superior ────────────────────────────── */
@@ -156,7 +157,10 @@
 .ck-fields {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
+
+.ck-fields > * { min-width: 0; }
 
 .ck-fields--2 { grid-template-columns: 1fr 1fr; }
 .ck-fields--3 { grid-template-columns: 1fr 1fr 1fr; }
@@ -427,6 +431,9 @@
 
 .ck-summary-row-label { color: var(--fg-2); }
 .ck-summary-row-val   { font-weight: 600; color: var(--fg); }
+
+.ck-summary-row--gratis .ck-summary-row-label { color: var(--sage-deep); font-weight: 600; }
+.ck-summary-row--gratis .ck-summary-row-val   { color: var(--sage-deep); }
 
 .ck-summary-total {
   display: flex;
@@ -775,16 +782,16 @@
 }
 
 .ck-btn-boleto-primary {
-  flex: 1;
   height: 48px;
+  width: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 14px;
   background: var(--sage-deep);
   color: white;
   border-radius: var(--r-md);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -822,7 +829,7 @@
 }
 
 .ck-btn-home {
-  flex: 1;
+  width: 120px;
   height: 48px;
   display: flex;
   align-items: center;
@@ -842,7 +849,7 @@
 .ck-btn-home:hover { background: var(--surface); }
 
 .ck-btn-shop {
-  flex: 1;
+  width: 200px;
   height: 48px;
   display: flex;
   align-items: center;
@@ -871,11 +878,145 @@
   }
 }
 
+/* ── Frete section ── */
+
+.ck-frete {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.ck-frete-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-2);
+  letter-spacing: 0.02em;
+}
+
+@keyframes ck-spin { to { transform: rotate(360deg); } }
+.ck-frete-spinner {
+  color: var(--sage-deep);
+  animation: ck-spin 0.8s linear infinite;
+  margin-left: 4px;
+}
+
+.ck-frete-error {
+  font-size: 12.5px;
+  color: oklch(0.50 0.18 25);
+  margin: 0;
+}
+
+.ck-frete-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ck-frete-opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  cursor: pointer;
+  background: white;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.ck-frete-opcao input[type="radio"] { accent-color: var(--sage-deep); flex-shrink: 0; }
+
+.ck-frete-opcao--active {
+  border-color: var(--sage-deep);
+  background: var(--sage-soft);
+}
+
+.ck-frete-opcao-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ck-frete-opcao-nome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.ck-frete-opcao-prazo {
+  font-size: 11.5px;
+  color: var(--fg-3);
+}
+
+.ck-frete-opcao-valor {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sage-deep);
+  white-space: nowrap;
+}
+
+/* Frete Grátis card */
+.ck-frete-gratis {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1.5px solid oklch(0.76 0.08 145);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  background: oklch(0.96 0.03 145);
+}
+
+.ck-frete-gratis-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: oklch(0.88 0.07 145);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sage-deep);
+  flex-shrink: 0;
+}
+
+.ck-frete-gratis-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ck-frete-gratis-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sage-deep);
+}
+
+.ck-frete-gratis-sub {
+  font-size: 12px;
+  color: oklch(0.46 0.07 145);
+}
+
+.ck-frete-gratis-valor {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--sage-deep);
+  white-space: nowrap;
+}
+
 @media (max-width: 840px) {
   .ck-main {
     grid-template-columns: 1fr;
-    padding: 32px 24px 60px;
+    padding: 24px 16px 60px;
   }
+
+  .ck-card { padding: 24px 18px; }
 
   .ck-summary-col {
     position: static;
@@ -898,13 +1039,16 @@
 }
 
 @media (max-width: 600px) {
-  .ck-card { padding: 22px 20px; }
+  .ck-card { padding: 18px 14px; }
   .ck-fields--2 { grid-template-columns: 1fr; }
   .ck-fields--3 { grid-template-columns: 1fr 1fr; }
   .ck-fields--3-1 { grid-template-columns: 3fr 1fr; }
-  .ck-fields--1-1-2 { grid-template-columns: 1fr 1fr; }
+  .ck-fields--1-1-2 { grid-template-columns: 1fr 1fr 1fr; }
   .ck-result-hero { padding: 32px 24px; }
   .ck-pix-box, .ck-boleto-box { padding: 24px 20px; }
   .ck-result-actions { flex-direction: column; }
   .ck-boleto-row { flex-direction: column; }
+
+  .ck-input { font-size: 13px; padding: 0 10px; }
+  .ck-label { font-size: 11px; }
 }

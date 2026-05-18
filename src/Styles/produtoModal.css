@@ -538,3 +538,174 @@
   .pm-thumbs { grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .pm-name   { font-size: 26px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   CALCULAR FRETE
+   ═══════════════════════════════════════════════════════════ */
+
+.pm-frete {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pm-frete-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg-2);
+  letter-spacing: 0.02em;
+}
+
+.pm-frete-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pm-frete-input {
+  height: 42px;
+  width: 160px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 0 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--fg);
+  background: white;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  letter-spacing: 0.05em;
+}
+
+.pm-frete-input:focus {
+  border-color: var(--sage-deep);
+  box-shadow: 0 0 0 3px oklch(0.34 0.04 145 / 0.12);
+}
+
+.pm-frete-input::placeholder { color: var(--fg-3); }
+
+@keyframes pm-spin { to { transform: rotate(360deg); } }
+.pm-frete-spinner {
+  color: var(--sage-deep);
+  animation: pm-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.pm-frete-endereco {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--fg-3);
+  line-height: 1.4;
+}
+
+.pm-frete-endereco svg { flex-shrink: 0; margin-top: 1px; color: var(--sage-deep); }
+
+.pm-frete-error {
+  font-size: 12px;
+  color: oklch(0.50 0.18 25);
+  margin: 0;
+}
+
+.pm-frete-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.pm-frete-opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  cursor: pointer;
+  background: white;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.pm-frete-opcao input[type="radio"] { accent-color: var(--sage-deep); flex-shrink: 0; }
+
+.pm-frete-opcao--active {
+  border-color: var(--sage-deep);
+  background: var(--sage-soft);
+}
+
+.pm-frete-opcao-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pm-frete-opcao-nome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.pm-frete-opcao-prazo {
+  font-size: 11.5px;
+  color: var(--fg-3);
+}
+
+.pm-frete-opcao-valor {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sage-deep);
+  white-space: nowrap;
+}
+
+/* Frete Grátis card */
+.pm-frete-gratis {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1.5px solid oklch(0.76 0.08 145);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  background: oklch(0.96 0.03 145);
+}
+
+.pm-frete-gratis-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: oklch(0.88 0.07 145);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sage-deep);
+  flex-shrink: 0;
+}
+
+.pm-frete-gratis-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pm-frete-gratis-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sage-deep);
+}
+
+.pm-frete-gratis-sub {
+  font-size: 12px;
+  color: oklch(0.46 0.07 145);
+}
+
+.pm-frete-gratis-valor {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--sage-deep);
+  white-space: nowrap;
+}
