@@ -20,8 +20,8 @@ function sortProdutos(list: ProdutoDTO[], key: SortKey): ProdutoDTO[] {
   const copy = [...list];
   if (key === 'nome_asc')   return copy.sort((a, b) => a.nomeProduto.localeCompare(b.nomeProduto));
   if (key === 'nome_desc')  return copy.sort((a, b) => b.nomeProduto.localeCompare(a.nomeProduto));
-  if (key === 'preco_asc')  return copy.sort((a, b) => a.valorVenda - b.valorVenda);
-  if (key === 'preco_desc') return copy.sort((a, b) => b.valorVenda - a.valorVenda);
+  if (key === 'preco_asc')  return copy.sort((a, b) => a.valorAVista - b.valorAVista);
+  if (key === 'preco_desc') return copy.sort((a, b) => b.valorAVista - a.valorAVista);
   return copy;
 }
 
@@ -69,7 +69,7 @@ const ProductCard: React.FC<{ produto: ProdutoDTO; onClick: () => void }> = ({ p
         {produto.descricao && (
           <p className="pcard-desc">{produto.descricao}</p>
         )}
-        <p className="pcard-price">{formatBRL(produto.valorVenda)}</p>
+        <p className="pcard-price">{formatBRL(produto.valorAVista)}</p>
       </div>
     </article>
   );

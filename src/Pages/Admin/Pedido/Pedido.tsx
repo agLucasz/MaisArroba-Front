@@ -115,7 +115,7 @@ const ProductPickerModal: React.FC<ProductPickerProps> = ({ produtos, onSelect, 
                 {p.embalagem && <span className="ped-picker-item-emb">{p.embalagem}</span>}
               </div>
               <div className="ped-picker-item-meta">
-                <span className="ped-picker-item-price">{formatBRL(p.valorVenda)}</span>
+                <span className="ped-picker-item-price">{formatBRL(p.valorAVista)}</span>
                 <span className={`ped-picker-item-stock${p.quantidade === 0 ? ' ped-picker-item-stock--zero' : ''}`}>
                   {p.quantidade === 0 ? 'Sem estoque' : `${p.quantidade} un`}
                 </span>
@@ -236,8 +236,8 @@ const NovaVendaModal: React.FC<NovaVendaModalProps> = ({ produtos, clientes, onC
         produtoId:      produto.produtoId,
         nomeProduto:    produto.nomeProduto,
         embalagem:      produto.embalagem,
-        valorUnitario:  produto.valorVenda,
-        valorOriginal:  produto.valorVenda,
+        valorUnitario:  produto.valorAVista,
+        valorOriginal:  produto.valorAVista,
         estoque:        produto.quantidade,
         quantidadeItem: 1,
       }];

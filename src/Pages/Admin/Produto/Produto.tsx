@@ -325,6 +325,7 @@ const emptyForm = {
   embalagem: '',
   valorCompra: '',
   valorVenda: '',
+  valorAVista: '',
   quantidade: '',
   categoriaId: '',
   ativo: true,
@@ -414,6 +415,7 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
         embalagem:       form.embalagem.trim(),
         valorCompra:     parseFloat(form.valorCompra) || 0,
         valorVenda:      parseFloat(form.valorVenda) || 0,
+        valorAVista:     parseFloat(form.valorAVista) || 0,
         categoriaIds:    [catId],
         ativo:           form.ativo,
         freteHabilitado: form.freteHabilitado,
@@ -492,7 +494,7 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
                 </div>
               </div>
 
-              <div className="modal-row modal-row-3">
+              <div className="modal-row modal-row-4">
                 <div className="modal-field">
                   <label className="modal-label" htmlFor="p-compra">Preço de compra</label>
                   <input
@@ -507,7 +509,20 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
                   />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label" htmlFor="p-venda">Preço de venda</label>
+                  <label className="modal-label" htmlFor="p-avista">Preço à vista (PIX/Boleto)</label>
+                  <input
+                    id="p-avista"
+                    className="modal-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={form.valorAVista}
+                    onChange={set('valorAVista')}
+                  />
+                </div>
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="p-venda">Preço cartão (crédito)</label>
                   <input
                     id="p-venda"
                     className="modal-input"
@@ -688,6 +703,7 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
     embalagem:       produto.embalagem,
     valorCompra:     produto.valorCompra.toString(),
     valorVenda:      produto.valorVenda.toString(),
+    valorAVista:     produto.valorAVista.toString(),
     quantidade:      produto.quantidade.toString(),
     categoriaId:     produto.categoriaIds[0]?.toString() ?? '',
     ativo:           produto.ativo,
@@ -787,6 +803,7 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
         embalagem:       form.embalagem.trim(),
         valorCompra:     parseFloat(form.valorCompra) || 0,
         valorVenda:      parseFloat(form.valorVenda) || 0,
+        valorAVista:     parseFloat(form.valorAVista) || 0,
         categoriaIds:    [catId],
         ativo:           form.ativo,
         freteHabilitado: form.freteHabilitado,
@@ -863,7 +880,7 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
                 </div>
               </div>
 
-              <div className="modal-row modal-row-3">
+              <div className="modal-row modal-row-4">
                 <div className="modal-field">
                   <label className="modal-label" htmlFor="pe-compra">Preço de compra</label>
                   <input
@@ -877,7 +894,19 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
                   />
                 </div>
                 <div className="modal-field">
-                  <label className="modal-label" htmlFor="pe-venda">Preço de venda</label>
+                  <label className="modal-label" htmlFor="pe-avista">Preço à vista (PIX/Boleto)</label>
+                  <input
+                    id="pe-avista"
+                    className="modal-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.valorAVista}
+                    onChange={set('valorAVista')}
+                  />
+                </div>
+                <div className="modal-field">
+                  <label className="modal-label" htmlFor="pe-venda">Preço cartão (crédito)</label>
                   <input
                     id="pe-venda"
                     className="modal-input"
@@ -1077,13 +1106,17 @@ const VisualizarProdutoModal: React.FC<VisualizarProdutoModalProps> = ({ produto
             </div>
           </div>
 
-          <div className="modal-row modal-row-3">
+          <div className="modal-row modal-row-4">
             <div className="modal-field">
               <label className="modal-label">Preço de compra</label>
               <input className="modal-input" type="text" value={formatBRL(produto.valorCompra)} readOnly />
             </div>
             <div className="modal-field">
-              <label className="modal-label">Preço de venda</label>
+              <label className="modal-label">Preço à vista (PIX/Boleto)</label>
+              <input className="modal-input" type="text" value={formatBRL(produto.valorAVista)} readOnly />
+            </div>
+            <div className="modal-field">
+              <label className="modal-label">Preço cartão (crédito)</label>
               <input className="modal-input" type="text" value={formatBRL(produto.valorVenda)} readOnly />
             </div>
             <div className="modal-field">
@@ -1357,7 +1390,7 @@ const Produto: React.FC = () => {
                     </div>
                   </td>
                   <td className="col-preco">
-                    <span className="prod-price">{formatBRL(prod.valorVenda)}</span>
+                    <span className="prod-price">{formatBRL(prod.valorAVista)}</span>
                   </td>
                   <td className="col-estoque">
                     <span className={`prod-stock ${getStockClass(prod.quantidade)}`}>

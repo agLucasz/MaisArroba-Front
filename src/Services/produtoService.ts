@@ -9,6 +9,7 @@ export interface ProdutoDTO {
   embalagem: string;
   valorCompra: number;
   valorVenda: number;
+  valorAVista: number;
   categoriaIds: number[];
   categorias: string[];
   ativo: boolean;
@@ -27,6 +28,7 @@ export interface ProdutoCreatePayload {
   embalagem: string;
   valorCompra: number;
   valorVenda: number;
+  valorAVista: number;
   categoriaIds: number[];
   ativo: boolean;
   freteHabilitado: boolean;

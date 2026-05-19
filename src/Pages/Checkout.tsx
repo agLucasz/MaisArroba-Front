@@ -47,18 +47,32 @@ const METHODS: { type: BillingType; label: string; desc: string; icon: React.Rea
 
 // ── Taxas Asaas ─────────────────────────────────────────────────────────────
 
-function getAsaasRate(parcelas: number): number {
+// MDR (taxa de processamento do cartão)
+function getMDR(parcelas: number): number {
   if (parcelas <= 1) return 0.0299;
   if (parcelas <= 6) return 0.0349;
   if (parcelas <= 12) return 0.0399;
   return 0.0429;
 }
 
-// Loja absorve 1x–3x; cliente absorve 4x+ via gross-up
+// Taxa mensal de antecipação automática Asaas
+function getTaxaAntecipacaoMensal(parcelas: number): number {
+  return parcelas <= 1 ? 0.0115 : 0.0160;
+}
+
+// Fator total de antecipação: cada parcela n vence em n meses
+// soma(n=1..k) [rate × n] / valor_total = rate × (k+1)/2
+function fatorAntecipacao(parcelas: number): number {
+  return getTaxaAntecipacaoMensal(parcelas) * (parcelas + 1) / 2;
+}
+
+// Loja absorve 1x–3x (MDR + antecipação); cliente absorve 4x+ via gross-up
+// fórmula: valorBase / (1 - MDR - fatorAntecipacao)
 function calcTotalComTaxa(total: number, parcelas: number): number {
   if (parcelas <= 3) return total;
-  const rate = getAsaasRate(parcelas);
-  return Math.round((total / (1 - rate)) * 100) / 100;
+  const mdr = getMDR(parcelas);
+  const ant = fatorAntecipacao(parcelas);
+  return Math.round((total / (1 - mdr - ant)) * 100) / 100;
 }
 
 const STEP_LABELS: { key: Step; label: string }[] = [
@@ -189,10 +203,11 @@ const Checkout: React.FC = () => {
     if (cepTimerRef.current) clearTimeout(cepTimerRef.current);
   }, []);
 
-  const totalValor   = items.reduce((s, i) => s + i.produto.valorVenda * i.qty, 0);
+  const totalCartao  = items.reduce((s, i) => s + i.produto.valorVenda * i.qty, 0);
+  const totalAVista  = items.reduce((s, i) => s + i.produto.valorAVista * i.qty, 0);
   const valorEfetivo = billing === 'CREDIT_CARD'
-    ? calcTotalComTaxa(totalValor, card.installmentCount)
-    : totalValor;
+    ? calcTotalComTaxa(totalCartao, card.installmentCount)
+    : totalAVista;
   const formatBRL  = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const stepIndex  = STEP_LABELS.findIndex(s => s.key === step);
 
@@ -598,7 +613,7 @@ const Checkout: React.FC = () => {
                         onChange={e => setCard(p => ({ ...p, installmentCount: Number(e.target.value) }))}
                       >
                         {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
-                          const totalN   = calcTotalComTaxa(totalValor, n);
+                          const totalN   = calcTotalComTaxa(totalCartao, n);
                           const parcela  = formatBRL(totalN / n);
                           const temJuros = n > 3;
                           return (
@@ -669,7 +684,7 @@ const Checkout: React.FC = () => {
                     <span className="ck-summary-row-label">
                       {produto.nomeProduto} <span style={{ color: 'var(--fg-3)', fontWeight: 400 }}>× {qty}</span>
                     </span>
-                    <span className="ck-summary-row-val">{formatBRL(produto.valorVenda * qty)}</span>
+                    <span className="ck-summary-row-val">{formatBRL((billing === 'CREDIT_CARD' ? produto.valorVenda : produto.valorAVista) * qty)}</span>
                   </div>
                 ))}
                 {freteSelected && (
@@ -698,7 +713,7 @@ const Checkout: React.FC = () => {
                 </div>
                 {billing === 'CREDIT_CARD' && card.installmentCount > 3 && (
                   <p className="ck-summary-fee-note">
-                    Inclui taxa de parcelamento ({(getAsaasRate(card.installmentCount) * 100).toFixed(2).replace('.', ',')}%)
+                    Inclui MDR + antecipação ({((getMDR(card.installmentCount) + fatorAntecipacao(card.installmentCount)) * 100).toFixed(2).replace('.', ',')}%)
                   </p>
                 )}
               </div>

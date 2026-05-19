@@ -73,7 +73,7 @@ export const CheckoutModal: React.FC<Props> = ({ items, onClose, onSuccess }) =>
     return () => { document.body.style.overflow = ''; };
   }, []);
 
-  const totalValor = items.reduce((s, i) => s + i.produto.valorVenda * i.qty, 0);
+  const totalValor = items.reduce((s, i) => s + i.produto.valorAVista * i.qty, 0);
   const formatBRL  = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   // ── Validação ──────────────────────────────────────────────────────────────

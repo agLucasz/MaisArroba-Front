@@ -709,3 +709,100 @@
   color: var(--sage-deep);
   white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   BLOCO DE PREÇOS
+   ═══════════════════════════════════════════════════════════ */
+
+.pm-price {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  background: var(--surface);
+}
+
+/* Linha à vista */
+
+.pm-price-avista {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pm-price-avista-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--sage-deep);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.pm-price-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pm-price-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.pm-price-badge--pix {
+  background: oklch(0.92 0.06 145);
+  color: var(--sage-deep);
+  border: 1px solid oklch(0.80 0.08 145);
+}
+
+.pm-price-badge--boleto {
+  background: oklch(0.93 0.02 220);
+  color: oklch(0.35 0.08 220);
+  border: 1px solid oklch(0.82 0.06 220);
+}
+
+/* Separador interno */
+
+.pm-price::before {
+  content: '';
+  display: block;
+  height: 0;
+}
+
+/* Linha cartão */
+
+.pm-price-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  flex-wrap: wrap;
+}
+
+.pm-price-card-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--fg-2);
+  letter-spacing: -0.02em;
+}
+
+.pm-price-card-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-3);
+}

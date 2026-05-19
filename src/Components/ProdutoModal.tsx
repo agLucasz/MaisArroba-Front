@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, MessageCircle, ShoppingCart, Truck, MapPin, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, MessageCircle, ShoppingCart, Truck, MapPin, Loader2, QrCode, FileText, CreditCard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { type ProdutoDTO } from '../Services/produtoService';
 import { useCart } from '../Contexts/CartContext';
@@ -175,6 +175,28 @@ const ProdutoModal: React.FC<Props> = ({ produto, onClose }) => {
               </div>
             </div>
           )}
+
+          {/* Preços */}
+          <div className="pm-price">
+            <div className="pm-price-avista">
+              <span className="pm-price-avista-value">
+                {produto.valorAVista.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </span>
+              <div className="pm-price-badges">
+                <span className="pm-price-badge pm-price-badge--pix"><QrCode size={11} />PIX</span>
+                <span className="pm-price-badge pm-price-badge--boleto"><FileText size={11} />Boleto</span>
+              </div>
+            </div>
+            <div className="pm-price-card">
+              <span className="pm-price-card-value">
+                {produto.valorVenda.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </span>
+              <span className="pm-price-card-label">
+                <CreditCard size={12} />
+                no cartão em até 12×
+              </span>
+            </div>
+          </div>
 
           <div className="pm-divider" />
 

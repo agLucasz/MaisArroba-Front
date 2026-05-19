@@ -67,13 +67,13 @@ export const RelatorioProdutosModal: React.FC<RelatorioProdutosModalProps> = ({ 
 
     autoTable(doc, {
       startY: 32,
-      head: [['Produto', 'Embalagem', 'Qtd', 'Vl. Compra', 'Vl. Venda', 'Categorias', 'Status']],
+      head: [['Produto', 'Embalagem', 'Qtd', 'Vl. Compra', 'Vl. À Vista', 'Categorias', 'Status']],
       body: filtered.map(p => [
         p.nomeProduto,
         p.embalagem,
         p.quantidade,
         formatBRL(p.valorCompra),
-        formatBRL(p.valorVenda),
+        formatBRL(p.valorAVista),
         p.categorias.join(', ') || '—',
         p.ativo ? 'Ativo' : 'Inativo',
       ]),
@@ -129,7 +129,7 @@ export const RelatorioProdutosModal: React.FC<RelatorioProdutosModalProps> = ({ 
                     <th>Produto</th>
                     <th>Embalagem</th>
                     <th>Qtd</th>
-                    <th>Vl. Venda</th>
+                    <th>Vl. À Vista</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -139,7 +139,7 @@ export const RelatorioProdutosModal: React.FC<RelatorioProdutosModalProps> = ({ 
                       <td>{p.nomeProduto}</td>
                       <td>{p.embalagem}</td>
                       <td>{p.quantidade}</td>
-                      <td>{formatBRL(p.valorVenda)}</td>
+                      <td>{formatBRL(p.valorAVista)}</td>
                       <td>
                         <span className={`rel-badge ${p.ativo ? 'rel-badge--ativo' : 'rel-badge--inativo'}`}>
                           {p.ativo ? 'Ativo' : 'Inativo'}

@@ -20,7 +20,7 @@ const Carrinho: React.FC = () => {
     document.title = 'Carrinho — MaisArroba';
   }, []);
 
-  const totalValor = items.reduce((sum, i) => sum + i.produto.valorVenda * i.qty, 0);
+  const totalValor = items.reduce((sum, i) => sum + i.produto.valorAVista * i.qty, 0);
 
   const buildWhatsAppMsg = () => {
     const lines = items.map(
@@ -140,7 +140,7 @@ const Carrinho: React.FC = () => {
                     {produto.nomeProduto}
                     <span style={{ color: 'var(--fg-3)', fontWeight: 400 }}> × {qty}</span>
                   </span>
-                  <span className="cart-summary-value">{formatBRL(produto.valorVenda * qty)}</span>
+                  <span className="cart-summary-value">{formatBRL(produto.valorAVista * qty)}</span>
                 </div>
               ))}
 
