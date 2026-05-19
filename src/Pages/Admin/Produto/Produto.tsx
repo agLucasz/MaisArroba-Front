@@ -28,6 +28,25 @@ function getStockClass(quantidade: number): string {
   return 'prod-stock--ok';
 }
 
+function parseBRLInput(val: string): number {
+  const hasComma = val.includes(',');
+  const hasDot   = val.includes('.');
+  if (hasComma && hasDot) return parseFloat(val.replace(/\./g, '').replace(',', '.')) || 0;
+  if (hasComma)           return parseFloat(val.replace(',', '.')) || 0;
+  return parseFloat(val) || 0;
+}
+
+function formatBRLInput(val: string): string {
+  if (!val.trim()) return '';
+  const n = parseBRLInput(val);
+  return isNaN(n) ? '' : n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDecimal(val: string, decimals: number): string {
+  const n = parseFloat(val);
+  return isNaN(n) ? '' : n.toFixed(decimals);
+}
+
 function getStatus(produto: ProdutoDTO): { label: string; cls: string } {
   if (!produto.ativo)            return { label: 'Rascunho',      cls: 'prod-badge--rascunho' };
   if (produto.quantidade === 0)  return { label: 'Sem estoque',   cls: 'prod-badge--semestoque' };
@@ -354,10 +373,6 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm(prev => ({ ...prev, [field]: e.target.value }));
 
-  const handleOverlay = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !loading && !uploading) onClose();
-  };
-
   const handleAddImages = (files: FileList) => {
     const remaining = MAX_IMAGES - slots.length;
     const added = Array.from(files).slice(0, remaining).map(file => ({
@@ -413,9 +428,9 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
         imagemUrls,
         quantidade:      Number(form.quantidade) || 0,
         embalagem:       form.embalagem.trim(),
-        valorCompra:     parseFloat(form.valorCompra) || 0,
-        valorVenda:      parseFloat(form.valorVenda) || 0,
-        valorAVista:     parseFloat(form.valorAVista) || 0,
+        valorCompra:     parseBRLInput(form.valorCompra),
+        valorVenda:      parseBRLInput(form.valorVenda),
+        valorAVista:     parseBRLInput(form.valorAVista),
         categoriaIds:    [catId],
         ativo:           form.ativo,
         freteHabilitado: form.freteHabilitado,
@@ -436,7 +451,7 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
   const busy = loading || uploading;
 
   return (
-    <div className="modal-overlay" onClick={handleOverlay}>
+    <div className="modal-overlay">
       <div className="modal-lg" role="dialog" aria-modal="true" aria-labelledby="prod-modal-title">
 
         <div className="modal-lg-header">
@@ -500,12 +515,13 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
                   <input
                     id="p-compra"
                     className="modal-input"
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0,00"
                     value={form.valorCompra}
                     onChange={set('valorCompra')}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => setForm(prev => ({ ...prev, valorCompra: formatBRLInput(e.target.value) }))}
                   />
                 </div>
                 <div className="modal-field">
@@ -513,12 +529,13 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
                   <input
                     id="p-avista"
                     className="modal-input"
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0,00"
                     value={form.valorAVista}
                     onChange={set('valorAVista')}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => setForm(prev => ({ ...prev, valorAVista: formatBRLInput(e.target.value) }))}
                   />
                 </div>
                 <div className="modal-field">
@@ -526,12 +543,13 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
                   <input
                     id="p-venda"
                     className="modal-input"
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0,00"
                     value={form.valorVenda}
                     onChange={set('valorVenda')}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => setForm(prev => ({ ...prev, valorVenda: formatBRLInput(e.target.value) }))}
                   />
                 </div>
                 <div className="modal-field">
@@ -575,6 +593,7 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
                       placeholder="0.500"
                       value={form.peso}
                       onChange={set('peso')}
+                      onBlur={e => setForm(prev => ({ ...prev, peso: formatDecimal(e.target.value, 3) }))}
                       disabled={!form.freteHabilitado}
                     />
                   </div>
@@ -586,9 +605,10 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
                       type="number"
                       min="0"
                       step="0.1"
-                      placeholder="15"
+                      placeholder="15.0"
                       value={form.altura}
                       onChange={set('altura')}
+                      onBlur={e => setForm(prev => ({ ...prev, altura: formatDecimal(e.target.value, 1) }))}
                       disabled={!form.freteHabilitado}
                     />
                   </div>
@@ -603,9 +623,10 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
                       type="number"
                       min="0"
                       step="0.1"
-                      placeholder="11"
+                      placeholder="11.0"
                       value={form.largura}
                       onChange={set('largura')}
+                      onBlur={e => setForm(prev => ({ ...prev, largura: formatDecimal(e.target.value, 1) }))}
                       disabled={!form.freteHabilitado}
                     />
                   </div>
@@ -617,9 +638,10 @@ const NovoProdutoModal: React.FC<ModalProps> = ({ categorias, onClose, onCreated
                       type="number"
                       min="0"
                       step="0.1"
-                      placeholder="20"
+                      placeholder="20.0"
                       value={form.comprimento}
                       onChange={set('comprimento')}
+                      onBlur={e => setForm(prev => ({ ...prev, comprimento: formatDecimal(e.target.value, 1) }))}
                       disabled={!form.freteHabilitado}
                     />
                   </div>
@@ -701,9 +723,9 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
     nomeProduto:     produto.nomeProduto,
     descricao:       produto.descricao ?? '',
     embalagem:       produto.embalagem,
-    valorCompra:     produto.valorCompra.toString(),
-    valorVenda:      produto.valorVenda.toString(),
-    valorAVista:     produto.valorAVista.toString(),
+    valorCompra:     formatBRLInput(produto.valorCompra.toString()),
+    valorVenda:      formatBRLInput(produto.valorVenda.toString()),
+    valorAVista:     formatBRLInput(produto.valorAVista.toString()),
     quantidade:      produto.quantidade.toString(),
     categoriaId:     produto.categoriaIds[0]?.toString() ?? '',
     ativo:           produto.ativo,
@@ -732,10 +754,6 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
   const set = (field: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm(prev => ({ ...prev, [field]: e.target.value }));
-
-  const handleOverlay = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !loading && !uploading) onClose();
-  };
 
   const handleAddImages = (files: FileList) => {
     const remaining = MAX_IMAGES - entries.length;
@@ -801,9 +819,9 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
         imagemUrls,
         quantidade:      Number(form.quantidade) || 0,
         embalagem:       form.embalagem.trim(),
-        valorCompra:     parseFloat(form.valorCompra) || 0,
-        valorVenda:      parseFloat(form.valorVenda) || 0,
-        valorAVista:     parseFloat(form.valorAVista) || 0,
+        valorCompra:     parseBRLInput(form.valorCompra),
+        valorVenda:      parseBRLInput(form.valorVenda),
+        valorAVista:     parseBRLInput(form.valorAVista),
         categoriaIds:    [catId],
         ativo:           form.ativo,
         freteHabilitado: form.freteHabilitado,
@@ -824,7 +842,7 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
   const busy = loading || uploading;
 
   return (
-    <div className="modal-overlay" onClick={handleOverlay}>
+    <div className="modal-overlay">
       <div className="modal-lg" role="dialog" aria-modal="true" aria-labelledby="prod-edit-title">
 
         <div className="modal-lg-header">
@@ -886,11 +904,13 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
                   <input
                     id="pe-compra"
                     className="modal-input"
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
                     value={form.valorCompra}
                     onChange={set('valorCompra')}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => setForm(prev => ({ ...prev, valorCompra: formatBRLInput(e.target.value) }))}
                   />
                 </div>
                 <div className="modal-field">
@@ -898,11 +918,13 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
                   <input
                     id="pe-avista"
                     className="modal-input"
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
                     value={form.valorAVista}
                     onChange={set('valorAVista')}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => setForm(prev => ({ ...prev, valorAVista: formatBRLInput(e.target.value) }))}
                   />
                 </div>
                 <div className="modal-field">
@@ -910,11 +932,13 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
                   <input
                     id="pe-venda"
                     className="modal-input"
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0,00"
                     value={form.valorVenda}
                     onChange={set('valorVenda')}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => setForm(prev => ({ ...prev, valorVenda: formatBRLInput(e.target.value) }))}
                   />
                 </div>
                 <div className="modal-field">
@@ -957,6 +981,7 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
                       placeholder="0.500"
                       value={form.peso}
                       onChange={set('peso')}
+                      onBlur={e => setForm(prev => ({ ...prev, peso: formatDecimal(e.target.value, 3) }))}
                       disabled={!form.freteHabilitado}
                     />
                   </div>
@@ -968,9 +993,10 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
                       type="number"
                       min="0"
                       step="0.1"
-                      placeholder="15"
+                      placeholder="15.0"
                       value={form.altura}
                       onChange={set('altura')}
+                      onBlur={e => setForm(prev => ({ ...prev, altura: formatDecimal(e.target.value, 1) }))}
                       disabled={!form.freteHabilitado}
                     />
                   </div>
@@ -985,9 +1011,10 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
                       type="number"
                       min="0"
                       step="0.1"
-                      placeholder="11"
+                      placeholder="11.0"
                       value={form.largura}
                       onChange={set('largura')}
+                      onBlur={e => setForm(prev => ({ ...prev, largura: formatDecimal(e.target.value, 1) }))}
                       disabled={!form.freteHabilitado}
                     />
                   </div>
@@ -999,9 +1026,10 @@ const EditarProdutoModal: React.FC<EditProdutoModalProps> = ({ produto, categori
                       type="number"
                       min="0"
                       step="0.1"
-                      placeholder="20"
+                      placeholder="20.0"
                       value={form.comprimento}
                       onChange={set('comprimento')}
+                      onBlur={e => setForm(prev => ({ ...prev, comprimento: formatDecimal(e.target.value, 1) }))}
                       disabled={!form.freteHabilitado}
                     />
                   </div>
@@ -1080,7 +1108,7 @@ const VisualizarProdutoModal: React.FC<VisualizarProdutoModalProps> = ({ produto
   const catNome = categorias.find(c => c.categoriaId === produto.categoriaIds[0])?.nomeCategoria ?? produto.categorias[0] ?? '—';
 
   return (
-    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="modal-overlay">
       <div className="modal-lg" role="dialog" aria-modal="true" aria-labelledby="view-prod-title">
 
         <div className="modal-lg-header">
