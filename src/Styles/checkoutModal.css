@@ -476,3 +476,41 @@
   .co-fields--3 { grid-template-columns: 1fr 1fr; }
   .co-payment-methods { grid-template-columns: 1fr; }
 }
+
+/* ── Selo de Segurança Mercado Pago ── */
+
+.co-security-badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: oklch(0.97 0.01 145 / 0.4);
+  border: 1.5px dashed oklch(0.85 0.05 145 / 0.5);
+  border-radius: var(--r-md);
+  padding: 14px;
+}
+
+.co-security-shield {
+  color: oklch(0.62 0.17 145);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.co-security-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.co-security-text {
+  font-size: 12px;
+  color: var(--fg-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.co-security-details svg {
+  color: #009EE3; /* Azul Oficial Mercado Pago */
+  display: block;
+}
+

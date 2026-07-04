@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   User, CreditCard, CheckCircle, ChevronLeft, ChevronRight,
   Copy, ExternalLink, Loader, QrCode, FileText, AlertCircle,
-  Truck, MapPin, Loader2,
+  Truck, MapPin, Loader2, ShieldCheck, Lock,
 } from 'lucide-react';
 import Header from '../Components/Header';
 import Footer from '../Components/Footer';
+import MercadoPagoLogo from '../Components/MercadoPagoLogo';
 import { useCart } from '../Contexts/CartContext';
 import { useComprador } from '../Contexts/CompradorContext';
 import { mercadoPagoService, type BillingType, type CheckoutResponse } from '../Services/mercadoPagoService';
@@ -642,6 +643,12 @@ const Checkout: React.FC = () => {
                   </div>
                 )}
 
+                {/* Garantia do Mercado Pago inline */}
+                <div className="ck-security-inline" style={{ marginTop: 16 }}>
+                  <ShieldCheck size={16} className="ck-security-inline-icon" />
+                  <span>Pagamento processado de forma segura via <strong>Mercado Pago</strong>. Criptografia SSL ativa.</span>
+                </div>
+
                 <div className="ck-actions" style={{ marginTop: 24 }}>
                   <button className="ck-btn-back" onClick={() => setStep('cliente')}>
                     <ChevronLeft size={15} /> Voltar
@@ -726,6 +733,42 @@ const Checkout: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* Selo de Segurança Mercado Pago */}
+            <div className="ck-security-card">
+              <div className="ck-security-header">
+                <ShieldCheck size={20} className="ck-security-shield-icon" />
+                <div>
+                  <h4 className="ck-security-title">Compra 100% Segura</h4>
+                  <p className="ck-security-subtitle">Sua segurança é nossa prioridade</p>
+                </div>
+              </div>
+              
+              <div className="ck-security-divider" />
+              
+              <div className="ck-security-mp-info">
+                <span className="ck-security-mp-label">Processado por:</span>
+                <div className="ck-security-mp-logo-wrapper">
+                  <MercadoPagoLogo height={18} />
+                </div>
+              </div>
+              
+              <p className="ck-security-text">
+                Todos os pagamentos são processados de forma segura através do <strong>Mercado Pago</strong>. Criptografia SSL avançada protege suas informações financeiras de ponta a ponta.
+              </p>
+              
+              <div className="ck-security-features">
+                <div className="ck-security-feature">
+                  <Lock size={13} />
+                  <span>Dados do cartão não são salvos no site</span>
+                </div>
+                <div className="ck-security-feature">
+                  <CheckCircle size={13} />
+                  <span>Compra garantida ou seu dinheiro de volta</span>
+                </div>
+              </div>
+            </div>
+
           </aside>
         </div>
       )}

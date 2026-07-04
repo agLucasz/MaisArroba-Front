@@ -1052,3 +1052,118 @@
   .ck-input { font-size: 13px; padding: 0 10px; }
   .ck-label { font-size: 11px; }
 }
+
+/* ── Selo de Segurança Mercado Pago ──────────────────────────── */
+
+.ck-security-card {
+  background: white;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-xl);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ck-security-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.ck-security-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ck-security-shield-icon {
+  color: oklch(0.62 0.17 145); /* Cor de segurança verde */
+  flex-shrink: 0;
+}
+
+.ck-security-title {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--fg);
+  margin: 0;
+}
+
+.ck-security-subtitle {
+  font-size: 12px;
+  color: var(--fg-3);
+  margin: 2px 0 0 0;
+}
+
+.ck-security-divider {
+  height: 1px;
+  background: var(--line-soft);
+}
+
+.ck-security-mp-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ck-security-mp-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ck-security-mp-logo-wrapper {
+  color: #009EE3; /* Azul Oficial Mercado Pago */
+  display: flex;
+  align-items: center;
+}
+
+.ck-security-text {
+  font-size: 12.5px;
+  color: var(--fg-2);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ck-security-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ck-security-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fg-2);
+}
+
+.ck-security-feature svg {
+  color: oklch(0.62 0.17 145);
+  flex-shrink: 0;
+}
+
+/* Aviso de segurança inline no form de pagamento */
+.ck-security-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: oklch(0.97 0.01 145 / 0.4);
+  border: 1px dashed oklch(0.62 0.17 145 / 0.3);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  font-size: 12.5px;
+  color: oklch(0.34 0.04 145);
+  line-height: 1.4;
+}
+
+.ck-security-inline-icon {
+  color: oklch(0.62 0.17 145);
+  flex-shrink: 0;
+}
+

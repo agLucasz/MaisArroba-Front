@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { X, ChevronRight, ChevronLeft, CheckCircle, Copy, ExternalLink, Loader, QrCode, FileText, CreditCard } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, CheckCircle, Copy, ExternalLink, Loader, QrCode, FileText, CreditCard, ShieldCheck, Lock } from 'lucide-react';
 import { type CartItem } from '../Contexts/CartContext';
 import { mercadoPagoService, type BillingType, type CheckoutResponse } from '../Services/mercadoPagoService';
 import { createCardToken } from '../Services/mercadoPago';
+import MercadoPagoLogo from './MercadoPagoLogo';
 import '../Styles/checkoutModal.css';
 
 type Step = 'cliente' | 'pagamento' | 'resultado';
@@ -330,6 +331,17 @@ export const CheckoutModal: React.FC<Props> = ({ items, onClose, onSuccess }) =>
               <div className="co-info-box">
                 <div className="co-info-box-icon"><CheckCircle size={18} /></div>
                 <p>Os preços são definidos após análise. Nossa equipe confirmará os valores antes de processar a cobrança.</p>
+              </div>
+
+              {/* Selo de Segurança Mercado Pago */}
+              <div className="co-security-badge">
+                <ShieldCheck size={16} className="co-security-shield" />
+                <div className="co-security-details">
+                  <p className="co-security-text">
+                    Pagamento 100% seguro processado pelo <strong>Mercado Pago</strong>. Seus dados financeiros estão totalmente protegidos.
+                  </p>
+                  <MercadoPagoLogo height={16} />
+                </div>
               </div>
 
               {apiError && (
