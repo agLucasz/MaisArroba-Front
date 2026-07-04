@@ -367,7 +367,7 @@
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-lg);
   width: 100%;
-  max-width: 960px;
+  max-width: 1060px;
   max-height: 92vh;
   display: flex;
   flex-direction: column;
@@ -415,7 +415,7 @@
   padding: 20px 26px;
   overflow-y: auto;
   display: grid;
-  grid-template-columns: 1fr 1.1fr;
+  grid-template-columns: 1.3fr 1fr;
   gap: 0 28px;
   align-items: start;
 }
@@ -462,6 +462,7 @@
 .modal-row-2 { grid-template-columns: 1fr 1fr; }
 .modal-row-3 { grid-template-columns: 1fr 1fr 1fr; }
 .modal-row-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.modal-row-4 .modal-field { justify-content: space-between; }
 
 @media (max-width: 600px) {
   .modal-row-3 { grid-template-columns: 1fr 1fr; }
