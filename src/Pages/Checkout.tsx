@@ -9,7 +9,8 @@ import Header from '../Components/Header';
 import Footer from '../Components/Footer';
 import { useCart } from '../Contexts/CartContext';
 import { useComprador } from '../Contexts/CompradorContext';
-import { asaasService, type BillingType, type CheckoutResponse } from '../Services/asaasService';
+import { mercadoPagoService, type BillingType, type CheckoutResponse } from '../Services/mercadoPagoService';
+import { createCardToken } from '../Services/mercadoPago';
 import {
   buscarEnderecoPorCep,
   calcularFrete,
@@ -45,7 +46,8 @@ const METHODS: { type: BillingType; label: string; desc: string; icon: React.Rea
   { type: 'CREDIT_CARD', label: 'Cartão', desc: 'Crédito em até 12×',              icon: <CreditCard size={22} /> },
 ];
 
-// ── Taxas Asaas ─────────────────────────────────────────────────────────────
+// ── Taxas de cartão ──────────────────────────────────────────────────────────
+// TODO: validar/atualizar com as taxas reais do Mercado Pago antes de produção.
 
 // MDR (taxa de processamento do cartão)
 function getMDR(parcelas: number): number {
@@ -55,7 +57,7 @@ function getMDR(parcelas: number): number {
   return 0.0429;
 }
 
-// Taxa mensal de antecipação automática Asaas
+// Taxa mensal de antecipação automática
 function getTaxaAntecipacaoMensal(parcelas: number): number {
   return parcelas <= 1 ? 0.0115 : 0.0160;
 }
@@ -242,7 +244,20 @@ const Checkout: React.FC = () => {
     setLoading(true);
     setApiError(null);
     try {
-      const response = await asaasService.checkout({
+      let cartao;
+      if (billing === 'CREDIT_CARD') {
+        const token = await createCardToken({
+          number:      card.number,
+          holderName:  card.holderName,
+          expiryMonth: card.expiryMonth,
+          expiryYear:  card.expiryYear,
+          ccv:         card.ccv,
+          cpfCnpj:     cliente.cpfCnpj,
+        });
+        cartao = { token, installmentCount: card.installmentCount };
+      }
+
+      const response = await mercadoPagoService.checkout({
         itens: items.map(i => ({ produtoId: i.produto.produtoId, quantidade: i.qty })),
         cliente: {
           nome:     cliente.nome,
@@ -257,14 +272,7 @@ const Checkout: React.FC = () => {
           uf:       cliente.uf      || undefined,
         },
         billingType: billing,
-        cartao: billing === 'CREDIT_CARD' ? {
-          holderName:       card.holderName,
-          number:           card.number.replace(/\s/g, ''),
-          expiryMonth:      card.expiryMonth,
-          expiryYear:       card.expiryYear,
-          ccv:              card.ccv,
-          installmentCount: card.installmentCount,
-        } : undefined,
+        cartao,
       });
       setResult(response);
       setStep('resultado');

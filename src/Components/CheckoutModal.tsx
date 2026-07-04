@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { X, ChevronRight, ChevronLeft, CheckCircle, Copy, ExternalLink, Loader, QrCode, FileText, CreditCard } from 'lucide-react';
 import { type CartItem } from '../Contexts/CartContext';
-import { asaasService, type BillingType, type CheckoutResponse } from '../Services/asaasService';
+import { mercadoPagoService, type BillingType, type CheckoutResponse } from '../Services/mercadoPagoService';
+import { createCardToken } from '../Services/mercadoPago';
 import '../Styles/checkoutModal.css';
 
 type Step = 'cliente' | 'pagamento' | 'resultado';
@@ -113,7 +114,20 @@ export const CheckoutModal: React.FC<Props> = ({ items, onClose, onSuccess }) =>
     setApiError(null);
 
     try {
-      const response = await asaasService.checkout({
+      let cartao;
+      if (billing === 'CREDIT_CARD') {
+        const token = await createCardToken({
+          number:      card.number,
+          holderName:  card.holderName,
+          expiryMonth: card.expiryMonth,
+          expiryYear:  card.expiryYear,
+          ccv:         card.ccv,
+          cpfCnpj:     cliente.cpfCnpj,
+        });
+        cartao = { token, installmentCount: card.installmentCount };
+      }
+
+      const response = await mercadoPagoService.checkout({
         itens: items.map(i => ({ produtoId: i.produto.produtoId, quantidade: i.qty })),
         cliente: {
           nome:     cliente.nome,
@@ -128,14 +142,7 @@ export const CheckoutModal: React.FC<Props> = ({ items, onClose, onSuccess }) =>
           uf:       cliente.uf || undefined,
         },
         billingType: billing,
-        cartao: billing === 'CREDIT_CARD' ? {
-          holderName:      card.holderName,
-          number:          card.number.replace(/\s/g, ''),
-          expiryMonth:     card.expiryMonth,
-          expiryYear:      card.expiryYear,
-          ccv:             card.ccv,
-          installmentCount: card.installmentCount,
-        } : undefined,
+        cartao,
       });
 
       setResult(response);

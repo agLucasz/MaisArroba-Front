@@ -20,12 +20,9 @@ export interface ClienteCheckout {
   uf?: string;
 }
 
+// O cartão nunca chega cru ao backend: o token é gerado no client via MP.js.
 export interface CardData {
-  holderName: string;
-  number: string;
-  expiryMonth: string;
-  expiryYear: string;
-  ccv: string;
+  token: string;
   installmentCount: number;
 }
 
@@ -39,7 +36,7 @@ export interface CheckoutRequest {
 
 export interface CheckoutResponse {
   vendaId: number;
-  asaasPaymentId: string;
+  mercadoPagoPaymentId: string;
   billingType: BillingType;
   status: string;
   value: number;
@@ -53,7 +50,7 @@ export interface CheckoutResponse {
 }
 
 export interface PaymentStatusResponse {
-  asaasPaymentId: string;
+  mercadoPagoPaymentId: string;
   billingType: string;
   status: string;
   value: number;
@@ -92,7 +89,7 @@ async function get<T>(path: string): Promise<T> {
   return data as T;
 }
 
-export const asaasService = {
+export const mercadoPagoService = {
   checkout: (req: CheckoutRequest) =>
     post<CheckoutResponse>('/api/pagamento/checkout', req),
 
@@ -100,5 +97,5 @@ export const asaasService = {
     get<PaymentStatusResponse>(`/api/pagamento/venda/${vendaId}/status`),
 
   healthCheck: () =>
-    get<{ status: string; account: string }>('/api/pagamento/health'),
+    get<{ status: string }>('/api/pagamento/health'),
 };
