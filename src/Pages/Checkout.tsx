@@ -1,17 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  User, CreditCard, CheckCircle, ChevronLeft, ChevronRight,
-  Copy, ExternalLink, Loader, QrCode, FileText, AlertCircle,
-  Truck, MapPin, Loader2, ShieldCheck, Lock,
+  User, CheckCircle, ChevronLeft, ChevronRight,
+  Loader, AlertCircle, QrCode, CreditCard,
+  Truck, Loader2, ShieldCheck, Lock,
 } from 'lucide-react';
 import Header from '../Components/Header';
 import Footer from '../Components/Footer';
 import MercadoPagoLogo from '../Components/MercadoPagoLogo';
 import { useCart } from '../Contexts/CartContext';
 import { useComprador } from '../Contexts/CompradorContext';
-import { mercadoPagoService, type BillingType, type CheckoutResponse } from '../Services/mercadoPagoService';
-import { createCardToken } from '../Services/mercadoPago';
+import { mercadoPagoService, type FormaPagamento } from '../Services/mercadoPagoService';
 import {
   buscarEnderecoPorCep,
   calcularFrete,
@@ -19,7 +18,7 @@ import {
 } from '../Services/freteService';
 import '../Styles/checkout.css';
 
-type Step = 'cliente' | 'pagamento' | 'resultado';
+type Step = 'cliente' | 'revisao' | 'redirecionando';
 
 interface ClienteForm {
   nome: string; cpfCnpj: string; email: string; telefone: string;
@@ -27,61 +26,15 @@ interface ClienteForm {
   cidade: string; uf: string;
 }
 
-interface CardForm {
-  holderName: string; number: string; expiryMonth: string;
-  expiryYear: string; ccv: string; installmentCount: number;
-}
-
 const EMPTY_CLIENTE: ClienteForm = {
   nome: '', cpfCnpj: '', email: '', telefone: '',
   endereco: '', numero: '', bairro: '', cep: '', cidade: '', uf: '',
 };
 
-const EMPTY_CARD: CardForm = {
-  holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: '', installmentCount: 1,
-};
-
-const METHODS: { type: BillingType; label: string; desc: string; icon: React.ReactNode; badge?: string }[] = [
-  { type: 'PIX',         label: 'PIX',    desc: 'Aprovação imediata via QR Code', icon: <QrCode size={22} />,    badge: 'Instantâneo' },
-  { type: 'BOLETO',      label: 'Boleto', desc: 'Vence em 3 dias úteis',           icon: <FileText size={22} />  },
-  { type: 'CREDIT_CARD', label: 'Cartão', desc: 'Crédito em até 12×',              icon: <CreditCard size={22} /> },
-];
-
-// ── Taxas de cartão ──────────────────────────────────────────────────────────
-// TODO: validar/atualizar com as taxas reais do Mercado Pago antes de produção.
-
-// MDR (taxa de processamento do cartão)
-function getMDR(parcelas: number): number {
-  if (parcelas <= 1) return 0.0299;
-  if (parcelas <= 6) return 0.0349;
-  if (parcelas <= 12) return 0.0399;
-  return 0.0429;
-}
-
-// Taxa mensal de antecipação automática
-function getTaxaAntecipacaoMensal(parcelas: number): number {
-  return parcelas <= 1 ? 0.0115 : 0.0160;
-}
-
-// Fator total de antecipação: cada parcela n vence em n meses
-// soma(n=1..k) [rate × n] / valor_total = rate × (k+1)/2
-function fatorAntecipacao(parcelas: number): number {
-  return getTaxaAntecipacaoMensal(parcelas) * (parcelas + 1) / 2;
-}
-
-// Loja absorve 1x–3x (MDR + antecipação); cliente absorve 4x+ via gross-up
-// fórmula: valorBase / (1 - MDR - fatorAntecipacao)
-function calcTotalComTaxa(total: number, parcelas: number): number {
-  if (parcelas <= 3) return total;
-  const mdr = getMDR(parcelas);
-  const ant = fatorAntecipacao(parcelas);
-  return Math.round((total / (1 - mdr - ant)) * 100) / 100;
-}
-
 const STEP_LABELS: { key: Step; label: string }[] = [
-  { key: 'cliente',   label: 'Seus dados'  },
-  { key: 'pagamento', label: 'Pagamento'   },
-  { key: 'resultado', label: 'Confirmação' },
+  { key: 'cliente',        label: 'Seus dados' },
+  { key: 'revisao',        label: 'Revisão'     },
+  { key: 'redirecionando', label: 'Pagamento'   },
 ];
 
 const Checkout: React.FC = () => {
@@ -90,14 +43,11 @@ const Checkout: React.FC = () => {
   const { comprador, isLoggedIn } = useComprador();
 
   const [step,     setStep]     = useState<Step>('cliente');
-  const [billing,  setBilling]  = useState<BillingType>('PIX');
   const [cliente,  setCliente]  = useState<ClienteForm>(EMPTY_CLIENTE);
-  const [card,     setCard]     = useState<CardForm>(EMPTY_CARD);
-  const [errors,   setErrors]   = useState<Partial<ClienteForm & CardForm>>({});
+  const [forma,    setForma]    = useState<FormaPagamento>('AVISTA');
+  const [errors,   setErrors]   = useState<Partial<ClienteForm>>({});
   const [loading,  setLoading]  = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [result,   setResult]   = useState<CheckoutResponse | null>(null);
-  const [copied,   setCopied]   = useState(false);
 
   // Frete
   const [cepFretes,      setCepFretes]      = useState<OpcaoFrete[]>([]);
@@ -113,7 +63,7 @@ const Checkout: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (items.length === 0 && step !== 'resultado') navigate('/carrinho', { replace: true });
+    if (items.length === 0 && step !== 'redirecionando') navigate('/carrinho', { replace: true });
   }, [items, step, navigate]);
 
   // Pré-preenche dados do comprador logado
@@ -206,11 +156,9 @@ const Checkout: React.FC = () => {
     if (cepTimerRef.current) clearTimeout(cepTimerRef.current);
   }, []);
 
-  const totalCartao  = items.reduce((s, i) => s + i.produto.valorVenda * i.qty, 0);
-  const totalAVista  = items.reduce((s, i) => s + i.produto.valorAVista * i.qty, 0);
-  const valorEfetivo = billing === 'CREDIT_CARD'
-    ? calcTotalComTaxa(totalCartao, card.installmentCount)
-    : totalAVista;
+  const totalEfetivo = items.reduce(
+    (s, i) => s + (forma === 'CARTAO' ? i.produto.valorVenda : i.produto.valorAVista) * i.qty, 0
+  );
   const formatBRL  = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const stepIndex  = STEP_LABELS.findIndex(s => s.key === step);
 
@@ -226,38 +174,12 @@ const Checkout: React.FC = () => {
     return Object.keys(e).length === 0;
   };
 
-  const validateCard = (): boolean => {
-    if (billing !== 'CREDIT_CARD') return true;
-    const e: Partial<CardForm> = {};
-    if (!card.holderName.trim())              e.holderName  = 'Nome no cartão obrigatório';
-    if (card.number.replace(/\s/g, '').length < 15) e.number = 'Número inválido';
-    if (!card.expiryMonth)                    e.expiryMonth = 'Mês inválido';
-    if (!card.expiryYear)                     e.expiryYear  = 'Ano inválido';
-    if (card.ccv.length < 3)                  e.ccv         = 'CVV inválido';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
   // ── Submit ───────────────────────────────────────────────────
 
   const handleSubmit = async () => {
-    if (!validateCard()) return;
     setLoading(true);
     setApiError(null);
     try {
-      let cartao;
-      if (billing === 'CREDIT_CARD') {
-        const token = await createCardToken({
-          number:      card.number,
-          holderName:  card.holderName,
-          expiryMonth: card.expiryMonth,
-          expiryYear:  card.expiryYear,
-          ccv:         card.ccv,
-          cpfCnpj:     cliente.cpfCnpj,
-        });
-        cartao = { token, installmentCount: card.installmentCount };
-      }
-
       const response = await mercadoPagoService.checkout({
         itens: items.map(i => ({ produtoId: i.produto.produtoId, quantidade: i.qty })),
         cliente: {
@@ -272,23 +194,15 @@ const Checkout: React.FC = () => {
           cidade:   cliente.cidade  || undefined,
           uf:       cliente.uf      || undefined,
         },
-        billingType: billing,
-        cartao,
+        formaPagamento: forma,
       });
-      setResult(response);
-      setStep('resultado');
       clearCart();
+      setStep('redirecionando');
+      window.location.href = response.redirectUrl;
     } catch (err) {
       setApiError(err instanceof Error ? err.message : 'Erro ao processar pagamento.');
-    } finally {
       setLoading(false);
     }
-  };
-
-  const copyText = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   // ── Campo helpers ────────────────────────────────────────────
@@ -309,24 +223,6 @@ const Checkout: React.FC = () => {
         onChange={e => setCliente(p => ({ ...p, [key]: e.target.value }))}
       />
       {errors[key] && <span className="ck-error">{errors[key]}</span>}
-    </div>
-  );
-
-  const cardField = (
-    key: keyof CardForm, label: string, placeholder?: string,
-    type = 'text', maxLen?: number,
-  ) => (
-    <div className="ck-field">
-      <label className="ck-label">{label}<span>*</span></label>
-      <input
-        className={`ck-input${errors[key] ? ' ck-input--error' : ''}`}
-        type={type}
-        placeholder={placeholder}
-        value={card[key] as string}
-        maxLength={maxLen}
-        onChange={e => setCard(p => ({ ...p, [key]: e.target.value }))}
-      />
-      {errors[key] && <span className="ck-error">{String(errors[key])}</span>}
     </div>
   );
 
@@ -355,100 +251,23 @@ const Checkout: React.FC = () => {
         </div>
       </div>
 
-      {/* ══ RESULTADO — layout centralizado ══ */}
-      {step === 'resultado' && result && (
+      {/* ══ REDIRECIONANDO ══ */}
+      {step === 'redirecionando' && (
         <div className="ck-result">
-
-          {/* Hero */}
           <div className="ck-result-hero">
             <div className="ck-result-check">
-              <CheckCircle size={36} strokeWidth={1.8} />
+              <Loader size={36} strokeWidth={1.8} />
             </div>
-            <h1 className="ck-result-title">
-              {result.billingType === 'CREDIT_CARD' ? 'Pagamento aprovado!' : 'Pedido realizado!'}
-            </h1>
-            <span className="ck-result-order">Pedido #{result.vendaId}</span>
+            <h1 className="ck-result-title">Te levando para o Mercado Pago…</h1>
             <p className="ck-result-desc">
-              {result.billingType === 'CREDIT_CARD'
-                ? 'Seu pagamento foi processado com sucesso. Nossa equipe entrará em contato para confirmar a entrega.'
-                : 'Seu pedido foi registrado. Complete o pagamento abaixo para confirmar.'
-              }
+              Você vai concluir o pagamento na página segura do Mercado Pago.
             </p>
-            {result.invoiceUrl && (
-              <a href={result.invoiceUrl} target="_blank" rel="noopener noreferrer" className="ck-btn-boleto-primary" style={{ marginTop: 4 }}>
-                <ExternalLink size={15} /> Ver recibo
-              </a>
-            )}
-          </div>
-
-          {/* PIX */}
-          {result.billingType === 'PIX' && (
-            <div className="ck-pix-box">
-              <p className="ck-pix-title">Escaneie o QR Code para pagar</p>
-              {result.pixQrCodeBase64
-                ? <img src={`data:image/png;base64,${result.pixQrCodeBase64}`} alt="QR Code PIX" className="ck-pix-qr" />
-                : <div className="ck-pix-qr-ph"><Loader size={28} /></div>
-              }
-              {result.pixPayload && (
-                <>
-                  <div className="ck-pix-payload-wrap">
-                    <textarea className="ck-pix-payload" rows={3} readOnly value={result.pixPayload} />
-                    <button className="ck-pix-copy-btn" onClick={() => copyText(result.pixPayload!)} title="Copiar">
-                      <Copy size={14} />
-                    </button>
-                  </div>
-                  <button className="ck-btn-copy-full" onClick={() => copyText(result.pixPayload!)}>
-                    <Copy size={15} />
-                    {copied ? 'Copiado!' : 'Copiar código PIX'}
-                  </button>
-                </>
-              )}
-              {result.pixExpirationDate && (
-                <p className="ck-pix-exp">
-                  Expira em: {new Date(result.pixExpirationDate).toLocaleString('pt-BR')}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Boleto */}
-          {result.billingType === 'BOLETO' && (
-            <div className="ck-boleto-box">
-              <p className="ck-boleto-title">Boleto gerado — vence em 3 dias úteis</p>
-              {result.boletoBarCode && (
-                <div className="ck-boleto-barcode" onClick={() => copyText(result.boletoBarCode!)} title="Clique para copiar">
-                  {result.boletoBarCode}
-                </div>
-              )}
-              <div className="ck-boleto-row">
-                {result.boletoUrl && (
-                  <a href={result.boletoUrl} target="_blank" rel="noopener noreferrer" className="ck-btn-boleto-primary">
-                    <ExternalLink size={15} /> Abrir boleto
-                  </a>
-                )}
-                {result.boletoBarCode && (
-                  <button className="ck-btn-boleto-secondary" onClick={() => copyText(result.boletoBarCode!)}>
-                    <Copy size={14} /> Copiar código
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Ações pós-resultado */}
-          <div className="ck-result-actions">
-            <Link to="/" className="ck-btn-home">
-              <ChevronLeft size={15} /> Início
-            </Link>
-            <Link to="/loja" className="ck-btn-shop">
-              Continuar comprando
-            </Link>
           </div>
         </div>
       )}
 
       {/* ══ FORMULÁRIO — layout 2 colunas ══ */}
-      {step !== 'resultado' && (
+      {step !== 'redirecionando' && (
         <div className="ck-main">
 
           {/* Coluna esquerda — formulário */}
@@ -567,74 +386,48 @@ const Checkout: React.FC = () => {
                   <button className="ck-btn-back" onClick={() => navigate('/carrinho')}>
                     <ChevronLeft size={15} /> Carrinho
                   </button>
-                  <button className="ck-btn-submit" onClick={() => { if (validateCliente()) setStep('pagamento'); }}>
+                  <button className="ck-btn-submit" onClick={() => { if (validateCliente()) setStep('revisao'); }}>
                     Continuar <ChevronRight size={16} />
                   </button>
                 </div>
               </div>
             )}
 
-            {/* ── ETAPA 2: Pagamento ── */}
-            {step === 'pagamento' && (
+            {/* ── ETAPA 2: Revisão — escolha do grupo de preço + método na página do Mercado Pago ── */}
+            {step === 'revisao' && (
               <div className="ck-card">
                 <div className="ck-card-header">
-                  <div className="ck-card-icon"><CreditCard size={20} /></div>
+                  <div className="ck-card-icon"><ShieldCheck size={20} /></div>
                   <div>
                     <h2 className="ck-card-title">Forma de pagamento</h2>
-                    <p className="ck-card-subtitle">Escolha como deseja pagar</p>
+                    <p className="ck-card-subtitle">Escolha o preço antes de ir para o Mercado Pago</p>
                   </div>
                 </div>
 
                 <div className="ck-methods">
-                  {METHODS.map(m => (
-                    <button
-                      key={m.type}
-                      className={`ck-method${billing === m.type ? ' ck-method--active' : ''}`}
-                      onClick={() => setBilling(m.type)}
-                    >
-                      {m.badge && <span className="ck-method-badge">{m.badge}</span>}
-                      <div className="ck-method-icon">{m.icon}</div>
-                      <span className="ck-method-name">{m.label}</span>
-                      <span className="ck-method-desc">{m.desc}</span>
-                    </button>
-                  ))}
+                  <button
+                    className={`ck-method${forma === 'AVISTA' ? ' ck-method--active' : ''}`}
+                    onClick={() => setForma('AVISTA')}
+                  >
+                    <span className="ck-method-badge">Preço à vista</span>
+                    <div className="ck-method-icon"><QrCode size={22} /></div>
+                    <span className="ck-method-name">PIX ou Boleto</span>
+                    <span className="ck-method-desc">Aprovação imediata via QR Code ou vencimento em 3 dias</span>
+                  </button>
+                  <button
+                    className={`ck-method${forma === 'CARTAO' ? ' ck-method--active' : ''}`}
+                    onClick={() => setForma('CARTAO')}
+                  >
+                    <div className="ck-method-icon"><CreditCard size={22} /></div>
+                    <span className="ck-method-name">Cartão de crédito</span>
+                    <span className="ck-method-desc">Escolha o parcelamento na página do Mercado Pago</span>
+                  </button>
                 </div>
 
-                {/* Campos do cartão */}
-                {billing === 'CREDIT_CARD' && (
-                  <>
-                    <div className="ck-divider" style={{ marginTop: 24, marginBottom: 20 }} />
-                    <h3 className="ck-label" style={{ marginBottom: 16 }}>Dados do cartão</h3>
-                    <div className="ck-fields">
-                      {cardField('holderName', 'Nome no cartão', 'JOÃO DA SILVA')}
-                      {cardField('number',     'Número',         '0000 0000 0000 0000', 'text', 19)}
-                    </div>
-                    <div className="ck-fields ck-fields--1-1-2" style={{ marginTop: 16 }}>
-                      {cardField('expiryMonth', 'Mês', '12')}
-                      {cardField('expiryYear',  'Ano', '2030')}
-                      {cardField('ccv',         'CVV', '123', 'text', 4)}
-                    </div>
-                    <div className="ck-field" style={{ marginTop: 16 }}>
-                      <label className="ck-label">Parcelas</label>
-                      <select
-                        className="ck-input"
-                        value={card.installmentCount}
-                        onChange={e => setCard(p => ({ ...p, installmentCount: Number(e.target.value) }))}
-                      >
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => {
-                          const totalN   = calcTotalComTaxa(totalCartao, n);
-                          const parcela  = formatBRL(totalN / n);
-                          const temJuros = n > 3;
-                          return (
-                            <option key={n} value={n}>
-                              {n}x de {parcela}{temJuros ? ` (total ${formatBRL(totalN)})` : ' • sem juros'}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </div>
-                  </>
-                )}
+                <div className="ck-info" style={{ marginTop: 16, marginBottom: 8 }}>
+                  <CheckCircle size={16} className="ck-info-icon" />
+                  <p>Você vai concluir o pagamento na página segura do Mercado Pago.</p>
+                </div>
 
                 {apiError && (
                   <div className="ck-api-error" style={{ marginTop: 16 }}>
@@ -656,7 +449,7 @@ const Checkout: React.FC = () => {
                   <button className="ck-btn-submit" onClick={handleSubmit} disabled={loading}>
                     {loading
                       ? <><div className="ck-spinner" /> Processando…</>
-                      : <>Confirmar pedido <ChevronRight size={16} /></>
+                      : <>Ir para pagamento <ChevronRight size={16} /></>
                     }
                   </button>
                 </div>
@@ -699,7 +492,7 @@ const Checkout: React.FC = () => {
                     <span className="ck-summary-row-label">
                       {produto.nomeProduto} <span style={{ color: 'var(--fg-3)', fontWeight: 400 }}>× {qty}</span>
                     </span>
-                    <span className="ck-summary-row-val">{formatBRL((billing === 'CREDIT_CARD' ? produto.valorVenda : produto.valorAVista) * qty)}</span>
+                    <span className="ck-summary-row-val">{formatBRL((forma === 'CARTAO' ? produto.valorVenda : produto.valorAVista) * qty)}</span>
                   </div>
                 ))}
                 {freteSelected && (
@@ -723,14 +516,9 @@ const Checkout: React.FC = () => {
                 <div className="ck-summary-total">
                   <span className="ck-summary-total-label">Total</span>
                   <span className="ck-summary-total-val">
-                    {formatBRL(valorEfetivo + (freteSelected?.valor ?? 0))}
+                    {formatBRL(totalEfetivo + (freteSelected?.valor ?? 0))}
                   </span>
                 </div>
-                {billing === 'CREDIT_CARD' && card.installmentCount > 3 && (
-                  <p className="ck-summary-fee-note">
-                    Inclui MDR + antecipação ({((getMDR(card.installmentCount) + fatorAntecipacao(card.installmentCount)) * 100).toFixed(2).replace('.', ',')}%)
-                  </p>
-                )}
               </div>
             </div>
 
@@ -743,20 +531,20 @@ const Checkout: React.FC = () => {
                   <p className="ck-security-subtitle">Sua segurança é nossa prioridade</p>
                 </div>
               </div>
-              
+
               <div className="ck-security-divider" />
-              
+
               <div className="ck-security-mp-info">
                 <span className="ck-security-mp-label">Processado por:</span>
                 <div className="ck-security-mp-logo-wrapper">
                   <MercadoPagoLogo height={18} />
                 </div>
               </div>
-              
+
               <p className="ck-security-text">
                 Todos os pagamentos são processados de forma segura através do <strong>Mercado Pago</strong>. Criptografia SSL avançada protege suas informações financeiras de ponta a ponta.
               </p>
-              
+
               <div className="ck-security-features">
                 <div className="ck-security-feature">
                   <Lock size={13} />

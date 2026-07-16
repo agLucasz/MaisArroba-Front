@@ -4,6 +4,7 @@ import Home from '../Pages/Home';
 import Catalogo from '../Pages/Catalogo';
 import Carrinho from '../Pages/Carrinho';
 import Checkout from '../Pages/Checkout';
+import CheckoutRetorno from '../Pages/CheckoutRetorno';
 import Cadastro from '../Pages/Cadastro';
 import LoginComprador from '../Pages/LoginComprador';
 import MinhaContaComprador from '../Pages/MinhaContaComprador';
@@ -33,6 +34,9 @@ const AppRoutes: React.FC = () => (
     <Route path="/relatorios"     element={<Relatorio />} />
     <Route path="/carrinho"        element={<Carrinho />} />
     <Route path="/checkout"        element={<Checkout />} />
+    <Route path="/checkout/sucesso"  element={<CheckoutRetorno resultado="sucesso" />} />
+    <Route path="/checkout/pendente" element={<CheckoutRetorno resultado="pendente" />} />
+    <Route path="/checkout/erro"     element={<CheckoutRetorno resultado="erro" />} />
     <Route path="/cadastro"        element={<Cadastro />} />
     <Route path="/login-comprador" element={<LoginComprador />} />
     <Route path="/minha-conta"     element={<MinhaContaComprador />} />

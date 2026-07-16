@@ -1,7 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5233';
 
-export type BillingType = 'PIX' | 'BOLETO' | 'CREDIT_CARD';
-
 export interface CheckoutItem {
   produtoId: number;
   quantidade: number;
@@ -20,38 +18,24 @@ export interface ClienteCheckout {
   uf?: string;
 }
 
-// O cartão nunca chega cru ao backend: o token é gerado no client via MP.js.
-export interface CardData {
-  token: string;
-  installmentCount: number;
-}
+export type FormaPagamento = 'AVISTA' | 'CARTAO';
 
 export interface CheckoutRequest {
   itens: CheckoutItem[];
   cliente: ClienteCheckout;
-  billingType: BillingType;
+  formaPagamento: FormaPagamento;
   observacao?: string;
-  cartao?: CardData;
 }
 
 export interface CheckoutResponse {
   vendaId: number;
-  mercadoPagoPaymentId: string;
-  billingType: BillingType;
-  status: string;
-  value: number;
-  pixPayload?: string;
-  pixQrCodeBase64?: string;
-  pixExpirationDate?: string;
-  boletoUrl?: string;
-  boletoBarCode?: string;
-  invoiceUrl?: string;
+  redirectUrl: string;
   message?: string;
 }
 
 export interface PaymentStatusResponse {
   mercadoPagoPaymentId: string;
-  billingType: string;
+  billingType?: string;
   status: string;
   value: number;
   paidAt?: string;
